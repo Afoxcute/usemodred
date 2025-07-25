@@ -564,9 +564,37 @@ export default function App({ thirdwebClient }: AppProps) {
     loadContractData();
   }, [account?.address]);
 
-  // Register IP Asset
+  // Create standardized NFT metadata
+  const createNFTMetadata = async (ipHash: string, userMetadata: string, isEncrypted: boolean) => {
+    // Generate metadata object
+    const metadata = {
+      name: `IP Asset #${Date.now()}`, // Unique name, could be replaced with actual token ID later
+      description: userMetadata,
+      image: ipHash, // Use IPFS hash as image reference
+      properties: {
+        ipHash,
+        isEncrypted,
+        uploadDate: new Date().toISOString()
+      }
+    };
+
+    // Upload metadata to IPFS
+    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+    const metadataFile = new File([metadataBlob], 'metadata.json');
+    
+    const metadataUploadResult = await pinFileToIPFS(metadataFile);
+    
+    if (!metadataUploadResult.success || !metadataUploadResult.cid) {
+      throw new Error('Failed to upload metadata to IPFS');
+    }
+
+    // Return IPFS URL for metadata
+    return `ipfs://${metadataUploadResult.cid}`;
+  };
+
+  // Modify registerIP to use new metadata creation
   const registerIP = async () => {
-    if (!account?.address || !ipHash || !metadata) {
+    if (!account?.address || !ipHash) {
       setError("Please fill in all required fields");
       return;
     }
@@ -574,6 +602,9 @@ export default function App({ thirdwebClient }: AppProps) {
     try {
       setLoading(true);
       setError("");
+
+      // Create and upload metadata to IPFS
+      const metadataUri = await createNFTMetadata(ipHash, metadata, isEncrypted);
 
       const contract = getContract({
         abi: MODRED_IP_ABI,
@@ -585,7 +616,7 @@ export default function App({ thirdwebClient }: AppProps) {
       const preparedCall = await prepareContractCall({
         contract,
         method: "registerIP",
-        params: [ipHash, metadata, isEncrypted],
+        params: [ipHash, metadataUri, isEncrypted],
       });
 
       const transaction = await sendTransaction({
@@ -594,8 +625,8 @@ export default function App({ thirdwebClient }: AppProps) {
       });
 
       await waitForReceipt({
-                  client: thirdwebClient,
-                  chain: defineChain(etherlinkTestnet.id),
+        client: thirdwebClient,
+        chain: defineChain(etherlinkTestnet.id),
         transactionHash: transaction.transactionHash,
       });
 

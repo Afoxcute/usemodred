@@ -80,7 +80,7 @@ const generateFilePreview = (file: File): Promise<string | null> => {
 };
 
 // Remove hardcoded Pinata credentials
-const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
+const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5MjJjNmZkOC04ZTZhLTQxMzUtODA4ZS05ZTkwZTMyMjViNTIiLCJlbWFpbCI6Imp3YXZvbGFiaWxvdmUwMDE2QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJjODQyN2NjYTM0YTQyYzExZTliOCIsInNjb3BlZEtleVNlY3JldCI6ImZmZDE0YjVkZmJiNDU2ZGE5ZTczMjczMGQ0ZDhiMTQ1ZDc3ZjUzYzU3NjYzMDM4MzhkMTM3NzlhOWRmZjZkOWYiLCJleHAiOjE3ODQ5Mjk1NDN9.7QnHrZdX0fjVOud63RUZc4ip9x15PlgViz60EMn9Cao";
 
 /**
  * Uploads a file to IPFS via Pinata
@@ -199,38 +199,6 @@ const getIPFSGatewayURL = (url: string): string => {
 
   // If it's already a gateway URL or something else, return as is
   return url;
-};
-
-/**
- * Extracts the CID from an IPFS URL
- * @param url IPFS URL in any format
- * @returns IPFS CID or null if not found
- */
-const extractIPFSCid = (url: string): string | null => {
-  if (!url) return null;
-
-  // Handle ipfs:// protocol
-  if (url.startsWith('ipfs://')) {
-    return url.replace('ipfs://', '');
-  }
-
-  // Handle /ipfs/ path
-  if (url.includes('/ipfs/')) {
-    const parts = url.split('/ipfs/');
-    if (parts.length > 1) {
-      // Remove any query parameters or path components after the CID
-      return parts[1].split('?')[0].split('/')[0];
-    }
-  }
-
-  // Handle gateway URLs with CID pattern
-  const gatewayRegex = /https:\/\/[^/]+\/ipfs\/([^/?#]+)/;
-  const match = url.match(gatewayRegex);
-  if (match && match[1]) {
-    return match[1];
-  }
-
-  return null;
 };
 
 const wallets = [
@@ -625,8 +593,8 @@ export default function App({ thirdwebClient }: AppProps) {
       });
 
       await waitForReceipt({
-        client: thirdwebClient,
-        chain: defineChain(etherlinkTestnet.id),
+                  client: thirdwebClient,
+                  chain: defineChain(etherlinkTestnet.id),
         transactionHash: transaction.transactionHash,
       });
 
@@ -883,8 +851,13 @@ export default function App({ thirdwebClient }: AppProps) {
                       alt="Uploaded media" 
                       className="max-w-full h-32 object-contain rounded"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).nextElementSibling!.style.display = 'block';
+                        const imgElement = e.target as HTMLImageElement;
+                        imgElement.style.display = 'none';
+                        
+                        const nextSibling = imgElement.nextElementSibling as HTMLElement | null;
+                        if (nextSibling) {
+                          nextSibling.setAttribute('style', 'display: block');
+                        }
                       }}
                     />
                   ) : null}

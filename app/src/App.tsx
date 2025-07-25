@@ -79,10 +79,8 @@ const generateFilePreview = (file: File): Promise<string | null> => {
   });
 };
 
-// Pinata IPFS upload utility - Hardcoded credentials
-const PINATA_API_KEY = 'c8427cca34a42c11e9b8';
-const PINATA_API_SECRET = 'ffd14b5dfbb456da9e732730d4d8b145d77f53c5766303838d13779a9dff6d9f';
-const PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5MjJjNmZkOC04ZTZhLTQxMzUtODA4ZS05ZTkwZTMyMjViNTIiLCJlbWFpbCI6Imp3YXZvbGFiaWxvdmUwMDE2QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJkOGI0YWNjZjk2MDI0OWE4YjNmMiIsInNjb3BlZEtleVNlY3JldCI6IjcxZjBkMjY0OWFjNjI2NjgzY2M2MjM3MDA0NTZjZGNhY2NlMWQ1Mzg5MWQ4MGUxOWZhZTg3NjIxNWFmZWE5NjkiLCJleHAiOjE3ODE4NTc3ODF9.N9x23fUM80hLy-c-E5XmjjfOP2BW06mBi4aXJw6RAC8';
+// Remove hardcoded Pinata credentials
+const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
 
 /**
  * Uploads a file to IPFS via Pinata
@@ -95,10 +93,10 @@ const pinFileToIPFS = async (file: File): Promise<{
   message?: string;
 }> => {
   try {
-    // Hardcoded Pinata credentials for debugging
-    const PINATA_API_KEY = 'c8427cca34a42c11e9b8';
-    const PINATA_API_SECRET = 'ffd14b5dfbb456da9e732730d4d8b145d77f53c5766303838d13779a9dff6d9f';
-    const PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5MjJjNmZkOC04ZTZhLTQxMzUtODA4ZS05ZTkwZTMyMjdiNTIiLCJlbWFpbCI6Imp3YXZvbGFiaWxvdmUwMDE2QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJjODQyN2NjYTM0YTQyYzExZTliOCIsInNjb3BlZEtleVNlY3JldCI6ImZmZDE0YjVkZmJiNDU2ZGE5ZTczMjczMGQ0ZDhiMTQ1ZDc3ZjUzYzU3NjYzMDM4MzhkMTM3NzlhOWRmZjZkOWYiLCJleHAiOjE3ODQ5Mjk1NDN9.7QnHrZdX0fjVOud63RUZc4ip9x15PlgViz60EMn9Cao';
+    // Validate JWT is present
+    if (!PINATA_JWT) {
+      throw new Error('Pinata JWT is not configured. Please set VITE_PINATA_JWT in your environment.');
+    }
 
     // Create a FormData object to send the file
     const formData = new FormData();

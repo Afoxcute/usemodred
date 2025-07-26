@@ -201,6 +201,53 @@ const getIPFSGatewayURL = (url: string): string => {
   return url;
 };
 
+// Parse metadata to extract name and description
+const parseMetadata = async (metadataUri: string) => {
+  try {
+    // If metadata is a direct JSON string, parse it
+    if (metadataUri.startsWith('{')) {
+      return JSON.parse(metadataUri);
+    }
+    
+    // If it's an IPFS URI, fetch it
+    if (metadataUri.startsWith('ipfs://')) {
+      const gatewayUrl = getIPFSGatewayURL(metadataUri);
+      const response = await fetch(gatewayUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+      }
+      
+      const metadata = await response.json();
+      return metadata;
+    }
+    
+    // If it's already a gateway URL, fetch it
+    if (metadataUri.includes('gateway.pinata.cloud')) {
+      const response = await fetch(metadataUri);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+      }
+      
+      const metadata = await response.json();
+      return metadata;
+    }
+    
+    // Default fallback
+    return {
+      name: "Unknown",
+      description: "No description available"
+    };
+  } catch (error) {
+    console.error('Error parsing metadata:', error);
+    return {
+      name: "Unknown",
+      description: "No description available"
+    };
+  }
+};
+
 const wallets = [
   inAppWallet({
     auth: {
@@ -348,19 +395,35 @@ export default function App({ thirdwebClient }: AppProps) {
   // Licenses state
   const [licenses, setLicenses] = useState<Map<number, License>>(new Map());
   
+  // Parsed metadata state
+  const [parsedMetadata, setParsedMetadata] = useState<Map<number, any>>(new Map());
+  
   // Form states
   const [ipFile, setIpFile] = useState<File | null>(null);
   const [ipHash, setIpHash] = useState<string>("");
-  const [metadata, setMetadata] = useState<string>("");
+  const [ipName, setIpName] = useState<string>("");
+  const [ipDescription, setIpDescription] = useState<string>("");
   const [isEncrypted, setIsEncrypted] = useState<boolean>(false);
   
   const [selectedTokenId, setSelectedTokenId] = useState<number>(1);
   const [royaltyPercentage, setRoyaltyPercentage] = useState<number>(10);
   const [licenseDuration, setLicenseDuration] = useState<number>(86400);
+  // License parameters
   const [commercialUse, setCommercialUse] = useState<boolean>(true);
-  const [licenseTerms, setLicenseTerms] = useState<string>("");
+  const [commercialAttribution, setCommercialAttribution] = useState<boolean>(true);
+  const [commercializerChecker, setCommercializerChecker] = useState<string>("0x0000000000000000000000000000000000000000");
+  const [commercializerCheckerData, setCommercializerCheckerData] = useState<string>("0000000000000000000000000000000000000000");
+  const [commercialRevShare, setCommercialRevShare] = useState<number>(100000000);
+  const [commercialRevCeiling, setCommercialRevCeiling] = useState<number>(0);
+  const [derivativesAllowed, setDerivativesAllowed] = useState<boolean>(true);
+  const [derivativesAttribution, setDerivativesAttribution] = useState<boolean>(true);
+  const [derivativesApproval, setDerivativesApproval] = useState<boolean>(false);
+  const [derivativesReciprocal, setDerivativesReciprocal] = useState<boolean>(true);
+  const [derivativeRevCeiling, setDerivativeRevCeiling] = useState<number>(0);
+  const [licenseCurrency, setLicenseCurrency] = useState<string>("0x15140000000000000000000000000000000000000");
+  const [licenseTerms, setLicenseTerms] = useState<string>("N/A");
   
-  const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [paymentAmount, setPaymentAmount] = useState<string>("0.001");
   const [paymentTokenId, setPaymentTokenId] = useState<number>(1);
   
   const [claimTokenId, setClaimTokenId] = useState<number>(1);
@@ -495,6 +558,22 @@ export default function App({ thirdwebClient }: AppProps) {
       }
       setIpAssets(newIpAssets);
 
+      // Parse metadata for all IP assets
+      const newParsedMetadata = new Map<number, any>();
+      for (const [id, asset] of newIpAssets.entries()) {
+        try {
+          const metadata = await parseMetadata(asset.metadata);
+          newParsedMetadata.set(id, metadata);
+        } catch (error) {
+          console.error(`Error parsing metadata for token ${id}:`, error);
+          newParsedMetadata.set(id, {
+            name: "Unknown",
+            description: "No description available"
+          });
+        }
+      }
+      setParsedMetadata(newParsedMetadata);
+
       // Load licenses
       const newLicenses = new Map<number, License>();
       for (let i = 1; i < nextLicenseIdNum; i++) {
@@ -533,14 +612,16 @@ export default function App({ thirdwebClient }: AppProps) {
   }, [account?.address]);
 
   // Create standardized NFT metadata
-  const createNFTMetadata = async (ipHash: string, userMetadata: string, isEncrypted: boolean) => {
+  const createNFTMetadata = async (ipHash: string, name: string, description: string, isEncrypted: boolean) => {
     // Generate metadata object
     const metadata = {
-      name: `IP Asset #${Date.now()}`, // Unique name, could be replaced with actual token ID later
-      description: userMetadata,
+      name: name || `IP Asset #${Date.now()}`, // Use provided name or generate unique name
+      description: description || "No description provided",
       image: ipHash, // Use IPFS hash as image reference
       properties: {
         ipHash,
+        name: name || "Unnamed",
+        description: description || "No description provided",
         isEncrypted,
         uploadDate: new Date().toISOString()
       }
@@ -562,8 +643,8 @@ export default function App({ thirdwebClient }: AppProps) {
 
   // Modify registerIP to use new metadata creation
   const registerIP = async () => {
-    if (!account?.address || !ipHash) {
-      setError("Please fill in all required fields");
+    if (!account?.address || !ipHash || !ipName.trim()) {
+      setError("Please fill in all required fields (IP Hash and Name are required)");
       return;
     }
 
@@ -572,12 +653,12 @@ export default function App({ thirdwebClient }: AppProps) {
       setError("");
 
       // Create and upload metadata to IPFS
-      const metadataUri = await createNFTMetadata(ipHash, metadata, isEncrypted);
+      const metadataUri = await createNFTMetadata(ipHash, ipName, ipDescription, isEncrypted);
 
       const contract = getContract({
         abi: MODRED_IP_ABI,
-        client: thirdwebClient,
-        chain: defineChain(etherlinkTestnet.id),
+            client: thirdwebClient,
+            chain: defineChain(etherlinkTestnet.id),
         address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
       });
 
@@ -587,27 +668,28 @@ export default function App({ thirdwebClient }: AppProps) {
         params: [ipHash, metadataUri, isEncrypted],
       });
 
-      const transaction = await sendTransaction({
+        const transaction = await sendTransaction({
         transaction: preparedCall,
         account: account,
-      });
+        });
 
       await waitForReceipt({
-                  client: thirdwebClient,
-                  chain: defineChain(etherlinkTestnet.id),
-        transactionHash: transaction.transactionHash,
-      });
+          client: thirdwebClient,
+          chain: defineChain(etherlinkTestnet.id),
+          transactionHash: transaction.transactionHash,
+        });
 
       // Reset form
       setIpFile(null);
       setIpHash("");
-      setMetadata("");
+      setIpName("");
+      setIpDescription("");
       setIsEncrypted(false);
 
       // Reload data
       await loadContractData();
 
-    } catch (error) {
+      } catch (error) {
       console.error("Error registering IP:", error);
       setError("Failed to register IP asset");
     } finally {
@@ -628,8 +710,8 @@ export default function App({ thirdwebClient }: AppProps) {
 
       const contract = getContract({
         abi: MODRED_IP_ABI,
-            client: thirdwebClient,
-            chain: defineChain(etherlinkTestnet.id),
+        client: thirdwebClient,
+        chain: defineChain(etherlinkTestnet.id),
         address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
       });
 
@@ -638,35 +720,46 @@ export default function App({ thirdwebClient }: AppProps) {
         method: "mintLicense",
         params: [
           BigInt(selectedTokenId),
-          BigInt(royaltyPercentage * 100), // Convert to basis points
+          BigInt(royaltyPercentage * 100), // Convert percentage to basis points
           BigInt(licenseDuration),
           commercialUse,
-          licenseTerms,
+          licenseTerms
         ],
       });
 
-        const transaction = await sendTransaction({
+      const transaction = await sendTransaction({
         transaction: preparedCall,
         account: account,
-        });
+      });
 
       await waitForReceipt({
-          client: thirdwebClient,
-          chain: defineChain(etherlinkTestnet.id),
-          transactionHash: transaction.transactionHash,
-        });
+        client: thirdwebClient,
+        chain: defineChain(etherlinkTestnet.id),
+        transactionHash: transaction.transactionHash,
+      });
 
       // Reset form
       setSelectedTokenId(1);
       setRoyaltyPercentage(10);
       setLicenseDuration(86400);
       setCommercialUse(true);
-      setLicenseTerms("");
+      setCommercialAttribution(true);
+      setCommercializerChecker("0x0000000000000000000000000000000000000000");
+      setCommercializerCheckerData("0000000000000000000000000000000000000000");
+      setCommercialRevShare(100000000);
+      setCommercialRevCeiling(0);
+      setDerivativesAllowed(true);
+      setDerivativesAttribution(true);
+      setDerivativesApproval(false);
+      setDerivativesReciprocal(true);
+      setDerivativeRevCeiling(0);
+      setLicenseCurrency("0x15140000000000000000000000000000000000000");
+      setLicenseTerms("N/A");
 
       // Reload data
       await loadContractData();
 
-      } catch (error) {
+    } catch (error) {
       console.error("Error minting license:", error);
       setError("Failed to mint license");
     } finally {
@@ -788,7 +881,7 @@ export default function App({ thirdwebClient }: AppProps) {
         <div className="error-message">
           {error}
           <button onClick={() => setError("")}>×</button>
-        </div>
+                      </div>
       )}
 
       {loading && <div className="loading">Loading...</div>}
@@ -871,12 +964,21 @@ export default function App({ thirdwebClient }: AppProps) {
             )}
           </div>
           <div className="form-group">
-            <label>Metadata (IPFS):</label>
+            <label>Name:</label>
             <input
               type="text"
-              value={metadata}
-              onChange={(e) => setMetadata(e.target.value)}
+              value={ipName}
+              onChange={(e) => setIpName(e.target.value)}
+              placeholder="Enter a name for your IP asset"
+            />
+          </div>
+          <div className="form-group">
+            <label>Description:</label>
+            <textarea
+              value={ipDescription}
+              onChange={(e) => setIpDescription(e.target.value)}
               placeholder="Describe your IP asset"
+              rows={3}
             />
           </div>
           <div className="form-group">
@@ -891,7 +993,7 @@ export default function App({ thirdwebClient }: AppProps) {
           </div>
           <button 
             onClick={registerIP} 
-            disabled={loading || !account?.address || !ipHash}
+            disabled={loading || !account?.address || !ipHash || !ipName.trim()}
           >
             Register IP
           </button>
@@ -906,11 +1008,15 @@ export default function App({ thirdwebClient }: AppProps) {
               value={selectedTokenId}
               onChange={(e) => setSelectedTokenId(Number(e.target.value))}
             >
-              {Array.from(ipAssets.keys()).map((id) => (
-                <option key={id} value={id}>
-                  Token #{id} - {ipAssets.get(id)?.ipHash.substring(0, 10)}...
-                </option>
-              ))}
+              {Array.from(ipAssets.keys()).map((id) => {
+                const asset = ipAssets.get(id);
+                const metadata = parsedMetadata.get(id) || { name: "Unknown" };
+                return (
+                  <option key={id} value={id}>
+                    Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="form-group">
@@ -943,15 +1049,124 @@ export default function App({ thirdwebClient }: AppProps) {
             </label>
           </div>
           <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={commercialAttribution}
+                onChange={(e) => setCommercialAttribution(e.target.checked)}
+              />
+              Commercial Attribution
+            </label>
+          </div>
+          <div className="form-group">
+            <label>Commercializer Checker:</label>
+            <input
+              type="text"
+              value={commercializerChecker}
+              onChange={(e) => setCommercializerChecker(e.target.value)}
+              placeholder="0x0000000000000000000000000000000000000000"
+            />
+          </div>
+          <div className="form-group">
+            <label>Commercializer Checker Data:</label>
+            <input
+              type="text"
+              value={commercializerCheckerData}
+              onChange={(e) => setCommercializerCheckerData(e.target.value)}
+              placeholder="0000000000000000000000000000000000000000"
+            />
+          </div>
+          <div className="form-group">
+            <label>Commercial Rev Share (%):</label>
+            <input
+              type="number"
+              value={commercialRevShare / 1000000}
+              onChange={(e) => setCommercialRevShare(Number(e.target.value) * 1000000)}
+              min="0"
+              max="100"
+              step="0.01"
+            />
+          </div>
+          <div className="form-group">
+            <label>Commercial Rev Ceiling:</label>
+            <input
+              type="number"
+              value={commercialRevCeiling}
+              onChange={(e) => setCommercialRevCeiling(Number(e.target.value))}
+              min="0"
+            />
+          </div>
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={derivativesAllowed}
+                onChange={(e) => setDerivativesAllowed(e.target.checked)}
+              />
+              Derivatives Allowed
+            </label>
+          </div>
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={derivativesAttribution}
+                onChange={(e) => setDerivativesAttribution(e.target.checked)}
+              />
+              Derivatives Attribution
+            </label>
+          </div>
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={derivativesApproval}
+                onChange={(e) => setDerivativesApproval(e.target.checked)}
+              />
+              Derivatives Approval Required
+            </label>
+          </div>
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={derivativesReciprocal}
+                onChange={(e) => setDerivativesReciprocal(e.target.checked)}
+              />
+              Derivatives Reciprocal
+            </label>
+          </div>
+          <div className="form-group">
+            <label>Derivative Rev Ceiling:</label>
+            <input
+              type="number"
+              value={derivativeRevCeiling}
+              onChange={(e) => setDerivativeRevCeiling(Number(e.target.value))}
+              min="0"
+            />
+          </div>
+          <div className="form-group">
+            <label>License Currency:</label>
+            <input
+              type="text"
+              value={licenseCurrency}
+              onChange={(e) => setLicenseCurrency(e.target.value)}
+              placeholder="0x15140000000000000000000000000000000000000"
+            />
+          </div>
+          <div className="form-group">
             <label>License Terms (IPFS):</label>
             <input
               type="text"
               value={licenseTerms}
               onChange={(e) => setLicenseTerms(e.target.value)}
-              placeholder="Qm..."
+              placeholder="N/A"
             />
           </div>
-          <button onClick={mintLicense} disabled={loading || !account?.address}>
+          <button 
+            onClick={mintLicense} 
+            disabled={loading || !account?.address || !licenseTerms}
+          >
             Mint License
           </button>
         </section>
@@ -965,11 +1180,15 @@ export default function App({ thirdwebClient }: AppProps) {
               value={paymentTokenId}
               onChange={(e) => setPaymentTokenId(Number(e.target.value))}
             >
-              {Array.from(ipAssets.keys()).map((id) => (
-                <option key={id} value={id}>
-                  Token #{id} - {ipAssets.get(id)?.ipHash.substring(0, 10)}...
-                </option>
-              ))}
+              {Array.from(ipAssets.keys()).map((id) => {
+                const asset = ipAssets.get(id);
+                const metadata = parsedMetadata.get(id) || { name: "Unknown" };
+                return (
+                  <option key={id} value={id}>
+                    Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
+                  </option>
+                );
+              })}
             </select>
           </div>
           <div className="form-group">
@@ -996,11 +1215,15 @@ export default function App({ thirdwebClient }: AppProps) {
               value={claimTokenId}
               onChange={(e) => setClaimTokenId(Number(e.target.value))}
             >
-              {Array.from(ipAssets.keys()).map((id) => (
-                <option key={id} value={id}>
-                  Token #{id} - {ipAssets.get(id)?.ipHash.substring(0, 10)}...
-                </option>
-              ))}
+              {Array.from(ipAssets.keys()).map((id) => {
+                const asset = ipAssets.get(id);
+                const metadata = parsedMetadata.get(id) || { name: "Unknown" };
+                return (
+                  <option key={id} value={id}>
+                    Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
+                  </option>
+                );
+              })}
             </select>
           </div>
           <button onClick={claimRoyalties} disabled={loading || !account?.address}>
@@ -1012,18 +1235,52 @@ export default function App({ thirdwebClient }: AppProps) {
         <section className="section">
           <h2>Registered IP Assets</h2>
           <div className="assets-grid">
-            {Array.from(ipAssets.entries()).map(([id, asset]) => (
-              <div key={id} className="asset-card">
-                <h3>Token #{id}</h3>
-                <p><strong>Owner:</strong> {asset.owner.substring(0, 10)}...</p>
-                <p><strong>IP Hash:</strong> {asset.ipHash.substring(0, 20)}...</p>
-                <p><strong>Metadata:</strong> {asset.metadata.substring(0, 20)}...</p>
-                <p><strong>Encrypted:</strong> {asset.isEncrypted ? "Yes" : "No"}</p>
-                <p><strong>Disputed:</strong> {asset.isDisputed ? "Yes" : "No"}</p>
-                <p><strong>Total Revenue:</strong> {formatEther(asset.totalRevenue)} XTZ</p>
-                <p><strong>Royalty Tokens:</strong> {Number(asset.royaltyTokens) / 100}%</p>
-              </div>
-            ))}
+            {Array.from(ipAssets.entries()).map(([id, asset]) => {
+              const metadata = parsedMetadata.get(id) || { name: "Unknown", description: "No description available" };
+              const mediaUrl = getIPFSGatewayURL(asset.ipHash);
+              
+              return (
+                <div key={id} className="asset-card">
+                  <h3>{metadata.name || `Token #${id}`}</h3>
+                  
+                  {/* Media Preview */}
+                  <div className="media-preview">
+                    {asset.ipHash && (
+                      <div className="media-container">
+                        {asset.ipHash.includes('image') || asset.ipHash.includes('jpg') || asset.ipHash.includes('jpeg') || asset.ipHash.includes('png') || asset.ipHash.includes('gif') ? (
+                          <img 
+                            src={mediaUrl} 
+                            alt={metadata.name || `IP Asset ${id}`}
+                            className="media-image"
+                            onError={(e) => {
+                              const imgElement = e.target as HTMLImageElement;
+                              imgElement.style.display = 'none';
+                              const fallback = imgElement.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'block';
+                            }}
+                          />
+                        ) : null}
+                        <div className="media-fallback" style={{ display: 'none' }}>
+                          <div className="file-icon">📄</div>
+                          <p>Media Preview</p>
+                          <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="view-media-link">
+                            View Media
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p><strong>Owner:</strong> {asset.owner.substring(0, 10)}...</p>
+                  <p><strong>Description:</strong> {metadata.description || "No description"}</p>
+                  <p><strong>IP Hash:</strong> {asset.ipHash.substring(0, 20)}...</p>
+                  <p><strong>Encrypted:</strong> {asset.isEncrypted ? "Yes" : "No"}</p>
+                  <p><strong>Disputed:</strong> {asset.isDisputed ? "Yes" : "No"}</p>
+                  <p><strong>Total Revenue:</strong> {formatEther(asset.totalRevenue)} XTZ</p>
+                  <p><strong>Royalty Tokens:</strong> {Number(asset.royaltyTokens) / 100}%</p>
+                </div>
+              );
+            })}
           </div>
         </section>
 

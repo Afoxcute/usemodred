@@ -15,7 +15,6 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { parseEther, formatEther } from "viem";
 import { etherlinkTestnet } from "viem/chains";
 import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
-import axios from 'axios';
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes
@@ -642,103 +641,7 @@ export default function App({ thirdwebClient }: AppProps) {
     return `ipfs://${metadataUploadResult.cid}`;
   };
 
-  // Yakoa API Configuration
-  const YAKOA_API_BASE_URL = 'https://docs-demo.ip-api-sandbox.yakoa.io/docs-demo';
-  const YAKOA_API_KEY = 'UAY1k44Ew29rncTD9ik4j97DBmKHi0B59Fkm3G2x';
-
-  // New interface for Yakoa token registration
-  interface YakoaTokenRegistration {
-    id: string;
-    registration_tx: {
-      hash: string;
-      block_number: number;
-      timestamp?: string;
-      chain: string;
-    };
-    creator_id: string;
-    metadata: any;
-    media: Array<{
-      media_id: string;
-      url: string;
-      hash?: string;
-      trust_reason?: {
-        type: string;
-        platform_name?: string;
-      };
-    }>;
-    license_parents?: any[];
-    authorizations?: any[];
-  }
-
-  // New state for Yakoa infringement tracking
-  const [yakoaInfringementStatus, setYakoaInfringementStatus] = useState<{
-    status: 'pending' | 'completed';
-    reasons?: string[];
-  }>({ status: 'pending' });
-
-  // Function to register IP token with Yakoa and check for infringement
-  const registerYakoaToken = async (ipAsset: IPAsset, metadata: any) => {
-    try {
-      // Prepare Yakoa token registration payload
-      const tokenRegistration: YakoaTokenRegistration = {
-        id: `${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${selectedTokenId}`,
-        registration_tx: {
-          hash: '', // You'll need to get this from the transaction
-          block_number: 0, // You'll need to get this from the transaction
-          chain: 'story-mainnet', // Adjust based on your network
-        },
-        creator_id: account?.address || 'unknown',
-        metadata: {
-          name: metadata.name,
-          description: metadata.description,
-          ...metadata
-        },
-        media: [{
-          media_id: `media_${selectedTokenId}`,
-          url: getIPFSGatewayURL(ipAsset.ipHash),
-          trust_reason: {
-            type: 'trusted_platform',
-            platform_name: 'Pinata'
-          }
-        }]
-      };
-
-      // Make API call to Yakoa
-      const response = await axios.post(`${YAKOA_API_BASE_URL}/token`, tokenRegistration, {
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'X-API-KEY': YAKOA_API_KEY
-        }
-      });
-
-      // Check infringement status
-      if (response.status === 201) {
-        // Fetch token details to get infringement status
-        const tokenResponse = await axios.get(`${YAKOA_API_BASE_URL}/token/${tokenRegistration.id}`, {
-          headers: {
-            'accept': 'application/json',
-            'X-API-KEY': YAKOA_API_KEY
-          }
-        });
-
-        // Update infringement status
-        if (tokenResponse.data.infringements) {
-          setYakoaInfringementStatus({
-            status: tokenResponse.data.infringements.status,
-            reasons: tokenResponse.data.infringements.reasons
-          });
-        }
-
-        return response.data;
-      }
-    } catch (error) {
-      console.error('Yakoa Token Registration Error:', error);
-      // Handle error (e.g., show error message to user)
-    }
-  };
-
-  // Modify existing registerIP function to include Yakoa registration
+  // Modify registerIP to use new metadata creation
   const registerIP = async () => {
     if (!account?.address || !ipHash || !ipName.trim()) {
       setError("Please fill in all required fields (IP Hash and Name are required)");
@@ -749,6 +652,9 @@ export default function App({ thirdwebClient }: AppProps) {
       setLoading(true);
       setError("");
 
+      // Create and upload metadata to IPFS
+      const metadataUri = await createNFTMetadata(ipHash, ipName, ipDescription, isEncrypted);
+
       const contract = getContract({
         abi: MODRED_IP_ABI,
             client: thirdwebClient,
@@ -756,43 +662,22 @@ export default function App({ thirdwebClient }: AppProps) {
         address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
       });
 
-      // Create and upload metadata to IPFS
-      const metadataUri = await createNFTMetadata(ipHash, ipName, ipDescription, isEncrypted);
-
-      // Prepare contract call
       const preparedCall = await prepareContractCall({
         contract,
         method: "registerIP",
         params: [ipHash, metadataUri, isEncrypted],
       });
 
-      // Send transaction
         const transaction = await sendTransaction({
         transaction: preparedCall,
         account: account,
         });
 
-      // Wait for receipt
       await waitForReceipt({
           client: thirdwebClient,
           chain: defineChain(etherlinkTestnet.id),
           transactionHash: transaction.transactionHash,
         });
-
-      // Parse metadata
-      const metadata = await parseMetadata(metadataUri);
-
-      // Register with Yakoa
-      await registerYakoaToken({
-        owner: account.address,
-        ipHash,
-        metadata: metadataUri,
-        isEncrypted,
-        isDisputed: false,
-        registrationDate: BigInt(Date.now()),
-        totalRevenue: 0n,
-        royaltyTokens: 0n
-      }, metadata);
 
       // Reset form
       setIpFile(null);
@@ -801,12 +686,12 @@ export default function App({ thirdwebClient }: AppProps) {
       setIpDescription("");
       setIsEncrypted(false);
 
-      // Reload contract data
+      // Reload data
       await loadContractData();
 
       } catch (error) {
       console.error("Error registering IP:", error);
-      setError("Failed to register IP");
+      setError("Failed to register IP asset");
     } finally {
       setLoading(false);
     }
@@ -1073,7 +958,7 @@ export default function App({ thirdwebClient }: AppProps) {
                     <p><strong>File:</strong> {ipFile?.name}</p>
                     <p><strong>IPFS URL:</strong> <a href={ipHash} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{ipHash}</a></p>
                     <p><strong>Gateway URL:</strong> <a href={getIPFSGatewayURL(ipHash)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{getIPFSGatewayURL(ipHash)}</a></p>
-                      </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1113,26 +998,6 @@ export default function App({ thirdwebClient }: AppProps) {
             Register IP
           </button>
         </section>
-
-        {yakoaInfringementStatus.status === 'completed' && (
-          <div className="yakoa-infringement-status">
-            <h3>Yakoa Infringement Check</h3>
-            {yakoaInfringementStatus.reasons && yakoaInfringementStatus.reasons.length > 0 ? (
-              <div className="infringement-warning">
-                <p>Potential Infringement Detected:</p>
-                <ul>
-                  {yakoaInfringementStatus.reasons.map((reason, index) => (
-                    <li key={index}>{reason}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="no-infringement">
-                <p>No Infringement Detected</p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Mint License */}
         <section className="section">
@@ -1325,7 +1190,7 @@ export default function App({ thirdwebClient }: AppProps) {
                 );
               })}
             </select>
-        </div>
+          </div>
           <div className="form-group">
             <label>Amount (XTZ):</label>
             <input
@@ -1335,7 +1200,7 @@ export default function App({ thirdwebClient }: AppProps) {
               min="0.001"
               step="0.001"
             />
-      </div>
+          </div>
           <button onClick={payRevenue} disabled={loading || !account?.address}>
             Pay Revenue
           </button>

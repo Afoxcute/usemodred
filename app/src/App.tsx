@@ -15,6 +15,15 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { parseEther, formatEther } from "viem";
 import { etherlinkTestnet } from "viem/chains";
 import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
+import { 
+  registerToYakoa, 
+  checkInfringementStatus,
+  updateYakoaToken,
+  getYakoaBrandAuth,
+  setYakoaBrandAuth,
+  deleteYakoaBrandAuth,
+  type YakoaResponse 
+} from "./services/yakoaService";
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes
@@ -428,6 +437,14 @@ export default function App({ thirdwebClient }: AppProps) {
   
   const [claimTokenId, setClaimTokenId] = useState<number>(1);
 
+  // Yakoa infringement detection state
+  const [yakoaStatus, setYakoaStatus] = useState<YakoaResponse | null>(null);
+  const [infringementLoading, setInfringementLoading] = useState(false);
+  const [infringementError, setInfringementError] = useState<string | null>(null);
+  const [selectedAssetForInfringement, setSelectedAssetForInfringement] = useState<string>("");
+  const [brandAuthId, setBrandAuthId] = useState("");
+  const [brandAuthData, setBrandAuthData] = useState("");
+
   const [filePreview, setFilePreview] = useState<string | null>(null);
 
   // Handle file selection for IP asset
@@ -689,6 +706,25 @@ export default function App({ thirdwebClient }: AppProps) {
       // Reload data
       await loadContractData();
 
+      // Get the next token ID for Yakoa registration
+      const nextTokenId = await readContract({
+        contract,
+        method: "nextTokenId",
+        params: [],
+      });
+
+      // Automatically register with Yakoa for infringement detection
+      try {
+        const tokenId = Number(nextTokenId) - 1; // The newly registered token
+        const mockBlockNumber = BigInt(1234567); // In production, get from transaction receipt
+        
+        await registerIPWithYakoa(tokenId, transaction.transactionHash, mockBlockNumber);
+      } catch (yakoaError) {
+        console.error("Yakoa registration failed:", yakoaError);
+        // Don't fail the main registration if Yakoa fails
+        setError("IP registered successfully, but Yakoa registration failed. You can register manually later.");
+      }
+
       } catch (error) {
       console.error("Error registering IP:", error);
       setError("Failed to register IP asset");
@@ -861,6 +897,138 @@ export default function App({ thirdwebClient }: AppProps) {
       setError("Failed to claim royalties");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Yakoa infringement detection functions
+  const registerIPWithYakoa = async (tokenId: number, transactionHash: string, blockNumber: bigint) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      const ipAsset = ipAssets.get(tokenId);
+      if (!ipAsset) {
+        throw new Error("IP Asset not found");
+      }
+
+      // Parse metadata to get IP details
+      const metadata = parsedMetadata.get(tokenId);
+      if (!metadata) {
+        throw new Error("IP Asset metadata not found");
+      }
+
+      const yakoaId = `${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${tokenId}`;
+      
+      const yakoaResponse = await registerToYakoa({
+        id: yakoaId,
+        transactionHash: transactionHash as `0x${string}`,
+        blockNumber,
+        creatorId: ipAsset.owner,
+        metadata: {
+          title: metadata.name || `IP Asset ${tokenId}`,
+          description: metadata.description || "IP Asset registered on ModredIP",
+        },
+        media: [
+          {
+            media_id: metadata.name || `IP Asset ${tokenId}`,
+            url: getIPFSGatewayURL(ipAsset.ipHash),
+          },
+        ],
+      });
+
+      setYakoaStatus(yakoaResponse);
+      setError("✅ IP Asset successfully registered with Yakoa for infringement detection!");
+      
+    } catch (error) {
+      console.error("Error registering with Yakoa:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to register with Yakoa");
+    } finally {
+      setInfringementLoading(false);
+    }
+  };
+
+  const checkInfringement = async (assetId: string) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      const yakoaResponse = await checkInfringementStatus(assetId);
+      setYakoaStatus(yakoaResponse);
+      
+    } catch (error) {
+      console.error("Error checking infringement:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to check infringement status");
+    } finally {
+      setInfringementLoading(false);
+    }
+  };
+
+  const updateIPMetadata = async (assetId: string, metadata: Record<string, string>) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      const yakoaResponse = await updateYakoaToken(assetId, metadata);
+      setYakoaStatus(yakoaResponse);
+      setError("✅ IP Asset metadata updated successfully!");
+      
+    } catch (error) {
+      console.error("Error updating metadata:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to update metadata");
+    } finally {
+      setInfringementLoading(false);
+    }
+  };
+
+
+
+  const getBrandAuthorization = async (assetId: string, brandId: string) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      const brandAuth = await getYakoaBrandAuth(assetId, brandId);
+      console.log("Brand Authorization:", brandAuth);
+      setError("✅ Brand authorization retrieved successfully!");
+      
+    } catch (error) {
+      console.error("Error getting brand auth:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to get brand authorization");
+    } finally {
+      setInfringementLoading(false);
+    }
+  };
+
+  const setBrandAuthorization = async (assetId: string, brandId: string, authData: any) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      const brandAuth = await setYakoaBrandAuth(assetId, brandId, authData);
+      console.log("Brand Authorization Set:", brandAuth);
+      setError("✅ Brand authorization set successfully!");
+      
+    } catch (error) {
+      console.error("Error setting brand auth:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to set brand authorization");
+    } finally {
+      setInfringementLoading(false);
+    }
+  };
+
+  const deleteBrandAuthorization = async (assetId: string, brandId: string) => {
+    try {
+      setInfringementLoading(true);
+      setInfringementError(null);
+
+      await deleteYakoaBrandAuth(assetId, brandId);
+      setError("✅ Brand authorization deleted successfully!");
+      
+    } catch (error) {
+      console.error("Error deleting brand auth:", error);
+      setInfringementError(error instanceof Error ? error.message : "Failed to delete brand authorization");
+    } finally {
+      setInfringementLoading(false);
     }
   };
 
@@ -1301,6 +1469,209 @@ export default function App({ thirdwebClient }: AppProps) {
               </div>
             ))}
         </div>
+        </section>
+
+        {/* Yakoa IP Infringement Detection */}
+        <section className="section">
+          <h2>🔍 IP Infringement Detection (Yakoa)</h2>
+          
+          {infringementError && (
+            <div className="error-message">
+              {infringementError}
+              <button onClick={() => setInfringementError(null)}>×</button>
+            </div>
+          )}
+
+          {/* Register IP with Yakoa */}
+          <div className="subsection">
+            <h3>Register IP Asset for Infringement Detection</h3>
+            <div className="form-group">
+              <label>Select IP Asset:</label>
+              <select
+                value={selectedAssetForInfringement}
+                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
+              >
+                <option value="">Select an IP Asset</option>
+                {Array.from(ipAssets.keys()).map((id) => {
+                  const asset = ipAssets.get(id);
+                  const metadata = parsedMetadata.get(id) || { name: "Unknown" };
+                  return (
+                    <option key={id} value={id}>
+                      Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <button 
+              onClick={() => {
+                const tokenId = parseInt(selectedAssetForInfringement);
+                if (tokenId && ipAssets.has(tokenId)) {
+                  // For demo purposes, using mock transaction data
+                  const mockTxHash = "0x" + "a".repeat(64);
+                  const mockBlockNumber = BigInt(1234567);
+                  registerIPWithYakoa(tokenId, mockTxHash, mockBlockNumber);
+                }
+              }} 
+              disabled={infringementLoading || !selectedAssetForInfringement || !account?.address}
+            >
+              {infringementLoading ? 'Registering...' : 'Register with Yakoa'}
+            </button>
+          </div>
+
+          {/* Check Infringement Status */}
+          <div className="subsection">
+            <h3>Check Infringement Status</h3>
+            <div className="form-group">
+              <label>Asset ID (contract:tokenId):</label>
+              <input
+                type="text"
+                value={selectedAssetForInfringement}
+                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
+                placeholder="0x1234...:123"
+              />
+            </div>
+            <button 
+              onClick={() => checkInfringement(selectedAssetForInfringement)}
+              disabled={infringementLoading || !selectedAssetForInfringement}
+            >
+              {infringementLoading ? 'Checking...' : 'Check Status'}
+            </button>
+          </div>
+
+          {/* Update IP Metadata */}
+          <div className="subsection">
+            <h3>Update IP Metadata</h3>
+            <div className="form-group">
+              <label>Asset ID:</label>
+              <input
+                type="text"
+                value={selectedAssetForInfringement}
+                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
+                placeholder="0x1234...:123"
+              />
+            </div>
+            <div className="form-group">
+              <label>New Title:</label>
+              <input
+                type="text"
+                placeholder="Updated IP Title"
+                id="new-title"
+              />
+            </div>
+            <div className="form-group">
+              <label>New Description:</label>
+              <textarea
+                placeholder="Updated IP Description"
+                id="new-description"
+              />
+            </div>
+            <button 
+              onClick={() => {
+                const titleInput = document.getElementById('new-title') as HTMLInputElement;
+                const descInput = document.getElementById('new-description') as HTMLTextAreaElement;
+                const metadata = {
+                  title: titleInput?.value || '',
+                  description: descInput?.value || ''
+                };
+                updateIPMetadata(selectedAssetForInfringement, metadata);
+              }}
+              disabled={infringementLoading || !selectedAssetForInfringement}
+            >
+              {infringementLoading ? 'Updating...' : 'Update Metadata'}
+            </button>
+          </div>
+
+          {/* Brand Authorization Management */}
+          <div className="subsection">
+            <h3>Brand Authorization Management</h3>
+            <div className="form-group">
+              <label>Asset ID:</label>
+              <input
+                type="text"
+                value={selectedAssetForInfringement}
+                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
+                placeholder="0x1234...:123"
+              />
+            </div>
+            <div className="form-group">
+              <label>Brand ID:</label>
+              <input
+                type="text"
+                value={brandAuthId}
+                onChange={(e) => setBrandAuthId(e.target.value)}
+                placeholder="brand123"
+              />
+            </div>
+            <div className="form-group">
+              <label>Authorization Data (JSON):</label>
+              <textarea
+                value={brandAuthData}
+                onChange={(e) => setBrandAuthData(e.target.value)}
+                placeholder='{"permission": "read", "expiry": "2024-12-31"}'
+              />
+            </div>
+            <div className="button-group">
+              <button 
+                onClick={() => getBrandAuthorization(selectedAssetForInfringement, brandAuthId)}
+                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId}
+              >
+                {infringementLoading ? 'Getting...' : 'Get Brand Auth'}
+              </button>
+              <button 
+                onClick={() => {
+                  try {
+                    const authData = JSON.parse(brandAuthData);
+                    setBrandAuthorization(selectedAssetForInfringement, brandAuthId, authData);
+                  } catch (error) {
+                    setInfringementError("Invalid JSON in authorization data");
+                  }
+                }}
+                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId || !brandAuthData}
+              >
+                {infringementLoading ? 'Setting...' : 'Set Brand Auth'}
+              </button>
+              <button 
+                onClick={() => deleteBrandAuthorization(selectedAssetForInfringement, brandAuthId)}
+                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId}
+              >
+                {infringementLoading ? 'Deleting...' : 'Delete Brand Auth'}
+              </button>
+            </div>
+          </div>
+
+          {/* Yakoa Status Display */}
+          {yakoaStatus && (
+            <div className="subsection">
+              <h3>Yakoa Status</h3>
+              <div className="status-card">
+                <p><strong>Asset ID:</strong> {yakoaStatus.id}</p>
+                <p><strong>Title:</strong> {yakoaStatus.metadata?.title || 'N/A'}</p>
+                <p><strong>Description:</strong> {yakoaStatus.metadata?.description || 'N/A'}</p>
+                <p><strong>Creator:</strong> {yakoaStatus.creator_id}</p>
+                <p><strong>Registration Block:</strong> {yakoaStatus.registration_tx?.block_number?.toString()}</p>
+                <p><strong>Transaction Hash:</strong> {yakoaStatus.registration_tx?.hash}</p>
+                <p><strong>Infringement Status:</strong> {
+                  yakoaStatus.infringements?.result === 'checked' ? '✅ Checked' :
+                  yakoaStatus.infringements?.result === 'infringed' ? '❌ Infringed' :
+                  '⏳ Not Checked'
+                }</p>
+                {yakoaStatus.media && yakoaStatus.media.length > 0 && (
+                  <div>
+                    <p><strong>Media:</strong></p>
+                    {yakoaStatus.media.map((media, index) => (
+                      <div key={index} className="media-item">
+                        <p>ID: {media.media_id}</p>
+                        <a href={media.url} target="_blank" rel="noopener noreferrer">
+                          View Media
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>

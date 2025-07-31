@@ -63,7 +63,7 @@ class YakoaService {
   private readonly API_KEY = 'UAY1k44Ew29rncTD9ik4j97DBmKHi0B59Fkm3G2x';
   
   // Proxy server URL - can be configured via environment variable
-  private readonly PROXY_URL = import.meta.env.VITE_YAKOA_PROXY_URL || 'http://localhost:3001';
+  private readonly PROXY_URL = import.meta.env.VITE_YAKOA_PROXY_URL || '/api/yakoa/register';
 
   /**
    * Register an IP asset with Yakoa for copyright monitoring

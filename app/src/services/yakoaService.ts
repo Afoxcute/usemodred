@@ -61,9 +61,6 @@ export interface IPAssetInfo {
 class YakoaService {
   private readonly API_BASE_URL = 'https://docs-demo.ip-api-sandbox.yakoa.io/docs-demo';
   private readonly API_KEY = 'UAY1k44Ew29rncTD9ik4j97DBmKHi0B59Fkm3G2x';
-  
-  // Proxy server URL - can be configured via environment variable
-  private readonly PROXY_URL = import.meta.env.VITE_YAKOA_PROXY_URL || '/api/yakoa/register';
 
   /**
    * Register an IP asset with Yakoa for copyright monitoring
@@ -109,63 +106,6 @@ class YakoaService {
 
       console.log('Registering IP asset with Yakoa:', requestBody);
 
-      // Try proxy server first, then direct API, then mock response
-      const proxyResponse = await this.tryProxyRegistration(requestBody);
-      if (proxyResponse) {
-        return proxyResponse;
-      }
-
-      const directResponse = await this.tryDirectRegistration(requestBody);
-      if (directResponse) {
-        return directResponse;
-      }
-
-      // Fallback to mock response
-      console.warn('Using mock registration response due to CORS/network issues');
-      return this.getMockRegistrationResponse(ipAssetInfo);
-
-    } catch (error) {
-      console.error('Error registering IP asset with Yakoa:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
-    }
-  }
-
-  /**
-   * Try to register via proxy server
-   */
-  private async tryProxyRegistration(requestBody: YakoaTokenRequest): Promise<YakoaRegistrationResponse | null> {
-    try {
-      const response = await fetch(`${this.PROXY_URL}/api/yakoa/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        console.warn('Proxy server error:', response.status);
-        return null;
-      }
-
-      const data = await response.json();
-      console.log('Proxy registration response:', data);
-      return data;
-
-    } catch (error) {
-      console.warn('Proxy server unavailable:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Try to register via direct API call
-   */
-  private async tryDirectRegistration(requestBody: YakoaTokenRequest): Promise<YakoaRegistrationResponse | null> {
-    try {
       const response = await fetch(`${this.API_BASE_URL}/token`, {
         method: 'POST',
         headers: {
@@ -186,7 +126,7 @@ class YakoaService {
       }
 
       const data = await response.json();
-      console.log('Direct Yakoa API response:', data);
+      console.log('Yakoa API response:', data);
 
       return {
         success: true,
@@ -196,24 +136,12 @@ class YakoaService {
       };
 
     } catch (error) {
-      console.warn('Direct API call failed due to CORS or network issues:', error);
-      return null;
+      console.error('Error registering IP asset with Yakoa:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
     }
-  }
-
-  /**
-   * Generate a mock registration response for development
-   * This simulates a successful Yakoa registration
-   */
-  private getMockRegistrationResponse(ipAssetInfo: IPAssetInfo): YakoaRegistrationResponse {
-    const mockTokenId = `yakoa_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    return {
-      success: true,
-      token_id: mockTokenId,
-      registration_status: 'registered',
-      details: `IP asset "${ipAssetInfo.metadata.name}" successfully registered with Yakoa for copyright monitoring. This is a mock response for development purposes. In production, this would be a real Yakoa registration.`
-    };
   }
 
   /**

@@ -1,0 +1,21 @@
+{
+  "name": "yakoa-proxy",
+  "version": "1.0.0",
+  "description": "Proxy server for Yakoa API to handle CORS issues",
+  "main": "yakoa-proxy.js",
+  "scripts": {
+    "start": "node yakoa-proxy.js",
+    "dev": "nodemon yakoa-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 

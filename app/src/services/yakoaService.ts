@@ -1,8 +1,8 @@
 /**
- * Yakoa IP Asset Registration Service
+ * Yakoa IP Infringement Detection Service
  * 
- * This service integrates with Yakoa's API to register IP assets
- * for copyright monitoring and protection.
+ * This service integrates with Yakoa's API to detect potential copyright violations
+ * for registered IP assets by analyzing their metadata and media content.
  */
 
 export interface YakoaMediaItem {
@@ -31,10 +31,11 @@ export interface YakoaTokenRequest {
   media: YakoaMediaItem[];
 }
 
-export interface YakoaRegistrationResponse {
+export interface YakoaTokenResponse {
   success: boolean;
   token_id?: string;
-  registration_status?: string;
+  infringement_detected?: boolean;
+  confidence_score?: number;
   details?: string;
   error?: string;
 }
@@ -63,11 +64,11 @@ class YakoaService {
   private readonly API_KEY = 'UAY1k44Ew29rncTD9ik4j97DBmKHi0B59Fkm3G2x';
 
   /**
-   * Register an IP asset with Yakoa for copyright monitoring
-   * @param ipAssetInfo Information about the IP asset to register
-   * @returns Promise with registration results
+   * Check for IP infringement using Yakoa's API
+   * @param ipAssetInfo Information about the IP asset to check
+   * @returns Promise with infringement detection results
    */
-  async registerIPAsset(ipAssetInfo: IPAssetInfo): Promise<YakoaRegistrationResponse> {
+  async checkInfringement(ipAssetInfo: IPAssetInfo): Promise<YakoaTokenResponse> {
     try {
       const requestBody: YakoaTokenRequest = {
         id: ipAssetInfo.tokenId,
@@ -104,7 +105,7 @@ class YakoaService {
         });
       }
 
-      console.log('Registering IP asset with Yakoa:', requestBody);
+      console.log('Sending infringement check request to Yakoa:', requestBody);
 
       const response = await fetch(`${this.API_BASE_URL}/token`, {
         method: 'POST',
@@ -131,12 +132,13 @@ class YakoaService {
       return {
         success: true,
         token_id: data.token_id,
-        registration_status: data.registration_status || 'registered',
-        details: data.details || 'IP asset successfully registered with Yakoa'
+        infringement_detected: data.infringement_detected || false,
+        confidence_score: data.confidence_score || 0,
+        details: data.details || 'No infringement detected'
       };
 
     } catch (error) {
-      console.error('Error registering IP asset with Yakoa:', error);
+      console.error('Error checking infringement:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -145,7 +147,7 @@ class YakoaService {
   }
 
   /**
-   * Parse IPFS metadata to extract relevant information for registration
+   * Parse IPFS metadata to extract relevant information for infringement checking
    * @param metadataString JSON string of IPFS metadata
    * @returns Parsed metadata object
    */

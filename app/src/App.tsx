@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import yakoaService, { IPAssetInfo, YakoaRegistrationResponse } from "./services/yakoaService";
+import yakoaService, { IPAssetInfo, YakoaTokenResponse } from "./services/yakoaService";
 
 import {
   defineChain,
@@ -431,10 +431,10 @@ export default function App({ thirdwebClient }: AppProps) {
 
   const [filePreview, setFilePreview] = useState<string | null>(null);
 
-  // Yakoa registration states
-  const [yakoaRegistrationResults, setYakoaRegistrationResults] = useState<Map<number, YakoaRegistrationResponse>>(new Map());
-  const [registeringWithYakoa, setRegisteringWithYakoa] = useState<boolean>(false);
-  const [selectedYakoaTokenId, setSelectedYakoaTokenId] = useState<number>(1);
+  // Infringement detection states
+  const [infringementResults, setInfringementResults] = useState<Map<number, YakoaTokenResponse>>(new Map());
+  const [checkingInfringement, setCheckingInfringement] = useState<boolean>(false);
+  const [selectedInfringementTokenId, setSelectedInfringementTokenId] = useState<number>(1);
 
   // Handle file selection for IP asset
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -870,26 +870,26 @@ export default function App({ thirdwebClient }: AppProps) {
     }
   };
 
-  // Register IP asset with Yakoa
-  const registerWithYakoa = async () => {
+  // Check for IP infringement using Yakoa
+  const checkInfringement = async () => {
     if (!account) {
       setError("Please connect your wallet first");
       return;
     }
 
     try {
-      setRegisteringWithYakoa(true);
+      setCheckingInfringement(true);
       setError("");
 
       // Get the selected IP asset
-      const ipAsset = ipAssets.get(selectedYakoaTokenId);
+      const ipAsset = ipAssets.get(selectedInfringementTokenId);
       if (!ipAsset) {
         setError("Selected IP asset not found");
         return;
       }
 
       // Parse metadata to get IP asset details
-      const metadata = parsedMetadata.get(selectedYakoaTokenId);
+      const metadata = parsedMetadata.get(selectedInfringementTokenId);
       if (!metadata) {
         setError("IP asset metadata not found");
         return;
@@ -897,7 +897,7 @@ export default function App({ thirdwebClient }: AppProps) {
 
       // Prepare IP asset info for Yakoa
       const ipAssetInfo: IPAssetInfo = {
-        tokenId: `0x${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${selectedYakoaTokenId}`,
+        tokenId: `0x${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${selectedInfringementTokenId}`,
         creator: ipAsset.owner,
         metadata: {
           name: metadata.name || 'Unknown IP Asset',
@@ -907,27 +907,31 @@ export default function App({ thirdwebClient }: AppProps) {
         mediaUrl: ipAsset.ipHash ? getIPFSGatewayURL(ipAsset.ipHash) : undefined
       };
 
-      console.log('Registering IP asset with Yakoa:', ipAssetInfo);
+      console.log('Checking infringement for IP asset:', ipAssetInfo);
 
       // Call Yakoa service
-      const result = await yakoaService.registerIPAsset(ipAssetInfo);
+      const result = await yakoaService.checkInfringement(ipAssetInfo);
 
       // Store the result
-      const newResults = new Map(yakoaRegistrationResults);
-      newResults.set(selectedYakoaTokenId, result);
-      setYakoaRegistrationResults(newResults);
+      const newResults = new Map(infringementResults);
+      newResults.set(selectedInfringementTokenId, result);
+      setInfringementResults(newResults);
 
       if (result.success) {
-        setError(`✅ IP asset successfully registered with Yakoa! Token ID: ${result.token_id} - ${result.details}`);
+        if (result.infringement_detected) {
+          setError(`⚠️ Potential infringement detected! Confidence: ${result.confidence_score}% - ${result.details}`);
+        } else {
+          setError(`✅ No infringement detected. ${result.details}`);
+        }
       } else {
-        setError(`❌ Registration failed: ${result.error}`);
+        setError(`❌ Infringement check failed: ${result.error}`);
       }
 
     } catch (error) {
-      console.error("Error registering with Yakoa:", error);
-      setError("Failed to register with Yakoa");
+      console.error("Error checking infringement:", error);
+      setError("Failed to check infringement");
     } finally {
-      setRegisteringWithYakoa(false);
+      setCheckingInfringement(false);
     }
   };
 
@@ -1298,14 +1302,14 @@ export default function App({ thirdwebClient }: AppProps) {
           </button>
         </section>
 
-        {/* Register IP Asset with Yakoa */}
+        {/* Check IP Infringement */}
         <section className="section">
-          <h2>Register IP Asset with Yakoa</h2>
+          <h2>Check IP Infringement</h2>
           <div className="form-group">
             <label>IP Token ID:</label>
             <select
-              value={selectedYakoaTokenId}
-              onChange={(e) => setSelectedYakoaTokenId(Number(e.target.value))}
+              value={selectedInfringementTokenId}
+              onChange={(e) => setSelectedInfringementTokenId(Number(e.target.value))}
             >
               {Array.from(ipAssets.keys()).map((id) => {
                 const asset = ipAssets.get(id);
@@ -1319,39 +1323,39 @@ export default function App({ thirdwebClient }: AppProps) {
             </select>
           </div>
           <button 
-            onClick={registerWithYakoa} 
-            disabled={registeringWithYakoa || !account?.address}
+            onClick={checkInfringement} 
+            disabled={checkingInfringement || !account?.address}
           >
-            {registeringWithYakoa ? 'Registering...' : 'Register with Yakoa'}
+            {checkingInfringement ? 'Checking...' : 'Check for Infringement'}
           </button>
           
-          {/* Display registration results */}
-          {yakoaRegistrationResults.has(selectedYakoaTokenId) && (
-            <div className="yakoa-registration-result">
-              <h3>Yakoa Registration Results</h3>
+          {/* Display infringement results */}
+          {infringementResults.has(selectedInfringementTokenId) && (
+            <div className="infringement-result">
+              <h3>Infringement Check Results</h3>
               {(() => {
-                const result = yakoaRegistrationResults.get(selectedYakoaTokenId);
+                const result = infringementResults.get(selectedInfringementTokenId);
                 if (!result) return null;
                 
                 if (result.success) {
                   return (
-                    <div className="result-card registration-success">
-                      <h4>✅ Successfully Registered with Yakoa</h4>
-                      {result.token_id && (
-                        <p><strong>Yakoa Token ID:</strong> {result.token_id}</p>
-                      )}
-                      {result.registration_status && (
-                        <p><strong>Status:</strong> {result.registration_status}</p>
+                    <div className={`result-card ${result.infringement_detected ? 'infringement-detected' : 'no-infringement'}`}>
+                      <h4>{result.infringement_detected ? '⚠️ Potential Infringement Detected' : '✅ No Infringement Detected'}</h4>
+                      {result.confidence_score && (
+                        <p><strong>Confidence Score:</strong> {result.confidence_score}%</p>
                       )}
                       {result.details && (
                         <p><strong>Details:</strong> {result.details}</p>
+                      )}
+                      {result.token_id && (
+                        <p><strong>Yakoa Token ID:</strong> {result.token_id}</p>
                       )}
                     </div>
                   );
                 } else {
                   return (
                     <div className="result-card error">
-                      <h4>❌ Registration Failed</h4>
+                      <h4>❌ Check Failed</h4>
                       <p><strong>Error:</strong> {result.error}</p>
                     </div>
                   );

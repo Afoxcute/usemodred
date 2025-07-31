@@ -358,15 +358,15 @@ button:disabled {
   background: #1f7bb8;
 }
 
-/* Yakoa Registration Styles */
-.yakoa-registration-result {
+/* Infringement Detection Styles */
+.infringement-result {
   margin-top: 20px;
   padding: 15px;
   border-radius: 8px;
   background-color: #f8f9fa;
 }
 
-.yakoa-registration-result h3 {
+.infringement-result h3 {
   margin-top: 0;
   margin-bottom: 15px;
   color: #333;
@@ -380,7 +380,13 @@ button:disabled {
   border-left: 4px solid;
 }
 
-.result-card.registration-success {
+.result-card.infringement-detected {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+  color: #856404;
+}
+
+.result-card.no-infringement {
   background-color: #d4edda;
   border-left-color: #28a745;
   color: #155724;

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import yakoaService, { IPAssetInfo, YakoaTokenResponse } from "./services/yakoaService";
 
 import {
   defineChain,
@@ -430,11 +429,6 @@ export default function App({ thirdwebClient }: AppProps) {
   const [claimTokenId, setClaimTokenId] = useState<number>(1);
 
   const [filePreview, setFilePreview] = useState<string | null>(null);
-
-  // Infringement detection states
-  const [infringementResults, setInfringementResults] = useState<Map<number, YakoaTokenResponse>>(new Map());
-  const [checkingInfringement, setCheckingInfringement] = useState<boolean>(false);
-  const [selectedInfringementTokenId, setSelectedInfringementTokenId] = useState<number>(1);
 
   // Handle file selection for IP asset
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -870,71 +864,6 @@ export default function App({ thirdwebClient }: AppProps) {
     }
   };
 
-  // Check for IP infringement using Yakoa
-  const checkInfringement = async () => {
-    if (!account) {
-      setError("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      setCheckingInfringement(true);
-      setError("");
-
-      // Get the selected IP asset
-      const ipAsset = ipAssets.get(selectedInfringementTokenId);
-      if (!ipAsset) {
-        setError("Selected IP asset not found");
-        return;
-      }
-
-      // Parse metadata to get IP asset details
-      const metadata = parsedMetadata.get(selectedInfringementTokenId);
-      if (!metadata) {
-        setError("IP asset metadata not found");
-        return;
-      }
-
-      // Prepare IP asset info for Yakoa
-      const ipAssetInfo: IPAssetInfo = {
-        tokenId: `0x${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${selectedInfringementTokenId}`,
-        creator: ipAsset.owner,
-        metadata: {
-          name: metadata.name || 'Unknown IP Asset',
-          description: metadata.description || '',
-          image: metadata.image || metadata.media || ''
-        },
-        mediaUrl: ipAsset.ipHash ? getIPFSGatewayURL(ipAsset.ipHash) : undefined
-      };
-
-      console.log('Checking infringement for IP asset:', ipAssetInfo);
-
-      // Call Yakoa service
-      const result = await yakoaService.checkInfringement(ipAssetInfo);
-
-      // Store the result
-      const newResults = new Map(infringementResults);
-      newResults.set(selectedInfringementTokenId, result);
-      setInfringementResults(newResults);
-
-      if (result.success) {
-        if (result.infringement_detected) {
-          setError(`⚠️ Potential infringement detected! Confidence: ${result.confidence_score}% - ${result.details}`);
-        } else {
-          setError(`✅ No infringement detected. ${result.details}`);
-        }
-      } else {
-        setError(`❌ Infringement check failed: ${result.error}`);
-      }
-
-    } catch (error) {
-      console.error("Error checking infringement:", error);
-      setError("Failed to check infringement");
-    } finally {
-      setCheckingInfringement(false);
-    }
-  };
-
   return (
     <div className="app">
       <header>
@@ -1300,69 +1229,6 @@ export default function App({ thirdwebClient }: AppProps) {
           <button onClick={claimRoyalties} disabled={loading || !account?.address}>
             Claim Royalties
           </button>
-        </section>
-
-        {/* Check IP Infringement */}
-        <section className="section">
-          <h2>Check IP Infringement</h2>
-          <div className="form-group">
-            <label>IP Token ID:</label>
-            <select
-              value={selectedInfringementTokenId}
-              onChange={(e) => setSelectedInfringementTokenId(Number(e.target.value))}
-            >
-              {Array.from(ipAssets.keys()).map((id) => {
-                const asset = ipAssets.get(id);
-                const metadata = parsedMetadata.get(id) || { name: "Unknown" };
-                return (
-                  <option key={id} value={id}>
-                    Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-          <button 
-            onClick={checkInfringement} 
-            disabled={checkingInfringement || !account?.address}
-          >
-            {checkingInfringement ? 'Checking...' : 'Check for Infringement'}
-          </button>
-          
-          {/* Display infringement results */}
-          {infringementResults.has(selectedInfringementTokenId) && (
-            <div className="infringement-result">
-              <h3>Infringement Check Results</h3>
-              {(() => {
-                const result = infringementResults.get(selectedInfringementTokenId);
-                if (!result) return null;
-                
-                if (result.success) {
-                  return (
-                    <div className={`result-card ${result.infringement_detected ? 'infringement-detected' : 'no-infringement'}`}>
-                      <h4>{result.infringement_detected ? '⚠️ Potential Infringement Detected' : '✅ No Infringement Detected'}</h4>
-                      {result.confidence_score && (
-                        <p><strong>Confidence Score:</strong> {result.confidence_score}%</p>
-                      )}
-                      {result.details && (
-                        <p><strong>Details:</strong> {result.details}</p>
-                      )}
-                      {result.token_id && (
-                        <p><strong>Yakoa Token ID:</strong> {result.token_id}</p>
-                      )}
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="result-card error">
-                      <h4>❌ Check Failed</h4>
-                      <p><strong>Error:</strong> {result.error}</p>
-                    </div>
-                  );
-                }
-              })()}
-            </div>
-          )}
         </section>
 
         {/* IP Assets Display */}

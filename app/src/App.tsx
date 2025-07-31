@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import yakoaService, { IPAssetInfo, YakoaRegistrationResponse } from "./services/yakoaService";
 
 import {
   defineChain,
@@ -429,6 +430,11 @@ export default function App({ thirdwebClient }: AppProps) {
   const [claimTokenId, setClaimTokenId] = useState<number>(1);
 
   const [filePreview, setFilePreview] = useState<string | null>(null);
+
+  // Yakoa registration states
+  const [yakoaRegistrationResults, setYakoaRegistrationResults] = useState<Map<number, YakoaRegistrationResponse>>(new Map());
+  const [registeringWithYakoa, setRegisteringWithYakoa] = useState<boolean>(false);
+  const [selectedYakoaTokenId, setSelectedYakoaTokenId] = useState<number>(1);
 
   // Handle file selection for IP asset
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -864,6 +870,67 @@ export default function App({ thirdwebClient }: AppProps) {
     }
   };
 
+  // Register IP asset with Yakoa
+  const registerWithYakoa = async () => {
+    if (!account) {
+      setError("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setRegisteringWithYakoa(true);
+      setError("");
+
+      // Get the selected IP asset
+      const ipAsset = ipAssets.get(selectedYakoaTokenId);
+      if (!ipAsset) {
+        setError("Selected IP asset not found");
+        return;
+      }
+
+      // Parse metadata to get IP asset details
+      const metadata = parsedMetadata.get(selectedYakoaTokenId);
+      if (!metadata) {
+        setError("IP asset metadata not found");
+        return;
+      }
+
+      // Prepare IP asset info for Yakoa
+      const ipAssetInfo: IPAssetInfo = {
+        tokenId: `0x${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${selectedYakoaTokenId}`,
+        creator: ipAsset.owner,
+        metadata: {
+          name: metadata.name || 'Unknown IP Asset',
+          description: metadata.description || '',
+          image: metadata.image || metadata.media || ''
+        },
+        mediaUrl: ipAsset.ipHash ? getIPFSGatewayURL(ipAsset.ipHash) : undefined
+      };
+
+      console.log('Registering IP asset with Yakoa:', ipAssetInfo);
+
+      // Call Yakoa service
+      const result = await yakoaService.registerIPAsset(ipAssetInfo);
+
+      // Store the result
+      const newResults = new Map(yakoaRegistrationResults);
+      newResults.set(selectedYakoaTokenId, result);
+      setYakoaRegistrationResults(newResults);
+
+      if (result.success) {
+        setError(`✅ IP asset successfully registered with Yakoa! Token ID: ${result.token_id} - ${result.details}`);
+      } else {
+        setError(`❌ Registration failed: ${result.error}`);
+      }
+
+    } catch (error) {
+      console.error("Error registering with Yakoa:", error);
+      setError("Failed to register with Yakoa");
+    } finally {
+      setRegisteringWithYakoa(false);
+    }
+  };
+
   return (
     <div className="app">
       <header>
@@ -1229,6 +1296,69 @@ export default function App({ thirdwebClient }: AppProps) {
           <button onClick={claimRoyalties} disabled={loading || !account?.address}>
             Claim Royalties
           </button>
+        </section>
+
+        {/* Register IP Asset with Yakoa */}
+        <section className="section">
+          <h2>Register IP Asset with Yakoa</h2>
+          <div className="form-group">
+            <label>IP Token ID:</label>
+            <select
+              value={selectedYakoaTokenId}
+              onChange={(e) => setSelectedYakoaTokenId(Number(e.target.value))}
+            >
+              {Array.from(ipAssets.keys()).map((id) => {
+                const asset = ipAssets.get(id);
+                const metadata = parsedMetadata.get(id) || { name: "Unknown" };
+                return (
+                  <option key={id} value={id}>
+                    Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <button 
+            onClick={registerWithYakoa} 
+            disabled={registeringWithYakoa || !account?.address}
+          >
+            {registeringWithYakoa ? 'Registering...' : 'Register with Yakoa'}
+          </button>
+          
+          {/* Display registration results */}
+          {yakoaRegistrationResults.has(selectedYakoaTokenId) && (
+            <div className="yakoa-registration-result">
+              <h3>Yakoa Registration Results</h3>
+              {(() => {
+                const result = yakoaRegistrationResults.get(selectedYakoaTokenId);
+                if (!result) return null;
+                
+                if (result.success) {
+                  return (
+                    <div className="result-card registration-success">
+                      <h4>✅ Successfully Registered with Yakoa</h4>
+                      {result.token_id && (
+                        <p><strong>Yakoa Token ID:</strong> {result.token_id}</p>
+                      )}
+                      {result.registration_status && (
+                        <p><strong>Status:</strong> {result.registration_status}</p>
+                      )}
+                      {result.details && (
+                        <p><strong>Details:</strong> {result.details}</p>
+                      )}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="result-card error">
+                      <h4>❌ Registration Failed</h4>
+                      <p><strong>Error:</strong> {result.error}</p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          )}
         </section>
 
         {/* IP Assets Display */}

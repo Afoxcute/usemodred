@@ -922,7 +922,7 @@ export default function App({ thirdwebClient }: AppProps) {
       const yakoaResponse = await registerToYakoa({
         id: yakoaId,
         transactionHash: transactionHash as `0x${string}`,
-        blockNumber,
+        blockNumber: blockNumber, // BigInt will be converted to string in the service
         creatorId: ipAsset.owner,
         metadata: {
           title: metadata.name || `IP Asset ${tokenId}`,
@@ -1126,7 +1126,7 @@ export default function App({ thirdwebClient }: AppProps) {
                     <p><strong>File:</strong> {ipFile?.name}</p>
                     <p><strong>IPFS URL:</strong> <a href={ipHash} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{ipHash}</a></p>
                     <p><strong>Gateway URL:</strong> <a href={getIPFSGatewayURL(ipHash)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{getIPFSGatewayURL(ipHash)}</a></p>
-                  </div>
+                      </div>
                 </div>
               </div>
             )}
@@ -1437,8 +1437,8 @@ export default function App({ thirdwebClient }: AppProps) {
                         </div>
                       </div>
                     )}
-                  </div>
-                  
+        </div>
+
                   <p><strong>Owner:</strong> {asset.owner.substring(0, 10)}...</p>
                   <p><strong>Description:</strong> {metadata.description || "No description"}</p>
                   <p><strong>IP Hash:</strong> {asset.ipHash.substring(0, 20)}...</p>
@@ -1517,7 +1517,7 @@ export default function App({ thirdwebClient }: AppProps) {
             >
               {infringementLoading ? 'Registering...' : 'Register with Yakoa'}
             </button>
-          </div>
+        </div>
 
           {/* Check Infringement Status */}
           <div className="subsection">
@@ -1537,7 +1537,7 @@ export default function App({ thirdwebClient }: AppProps) {
             >
               {infringementLoading ? 'Checking...' : 'Check Status'}
             </button>
-          </div>
+      </div>
 
           {/* Update IP Metadata */}
           <div className="subsection">
@@ -1605,7 +1605,7 @@ export default function App({ thirdwebClient }: AppProps) {
             </div>
             <div className="form-group">
               <label>Authorization Data (JSON):</label>
-              <textarea
+        <textarea
                 value={brandAuthData}
                 onChange={(e) => setBrandAuthData(e.target.value)}
                 placeholder='{"permission": "read", "expiry": "2024-12-31"}'

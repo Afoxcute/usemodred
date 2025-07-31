@@ -1,5 +1,12 @@
 import axios from 'axios';
 
+// Helper function to serialize BigInt
+const serializeBigInt = (obj: any): any => {
+  return JSON.parse(JSON.stringify(obj, (_, value) => 
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+};
+
 // Yakoa API configuration
 const YAKOA_API_KEY = 'your-yakoa-api-key'; // Replace with actual API key
 const YAKOA_SUBDOMAIN = 'docs-demo';
@@ -9,7 +16,7 @@ const YAKOA_BASE_URL = `https://${YAKOA_SUBDOMAIN}.ip-api-sandbox.yakoa.io/${YAK
 // Types for Yakoa API
 export interface YakoaRegistrationTx {
   hash: string;
-  block_number: number | bigint;
+  block_number: number | string;
   timestamp: string;
 }
 
@@ -39,28 +46,6 @@ export interface YakoaResponse {
 }
 
 /**
- * Helper function to serialize BigInt values for JSON
- */
-const serializeBigInt = (obj: any): any => {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    const result: any = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        result[key] = serializeBigInt(obj[key]);
-      }
-    }
-    return result;
-  }
-  return obj;
-};
-
-/**
  * Register an IP asset with Yakoa for infringement detection
  */
 export const registerToYakoa = async ({
@@ -85,7 +70,7 @@ export const registerToYakoa = async ({
       id: id.toLowerCase(),
       registration_tx: {
         hash: transactionHash.toLowerCase(),
-        block_number: blockNumber,
+        block_number: blockNumber.toString(), // Convert BigInt to string
         timestamp,
       },
       creator_id: creatorId.toLowerCase(),
@@ -93,8 +78,9 @@ export const registerToYakoa = async ({
       media,
     };
 
-    // Serialize BigInt values before logging and sending
+    // Use serializeBigInt to ensure proper serialization
     const serializedPayload = serializeBigInt(payload);
+
     console.log("🧪 Yakoa Registration Payload:", JSON.stringify(serializedPayload, null, 2));
 
     const response = await axios.post(
@@ -143,10 +129,9 @@ export const updateYakoaToken = async (
   metadata: Record<string, string>
 ): Promise<YakoaResponse> => {
   try {
-    const serializedMetadata = serializeBigInt(metadata);
     const response = await axios.put(
       `${YAKOA_BASE_URL}/${id.toLowerCase()}`,
-      { metadata: serializedMetadata },
+      { metadata },
       {
         headers: {
           "X-API-KEY": YAKOA_API_KEY,
@@ -222,10 +207,9 @@ export const setYakoaBrandAuth = async (
   authData: any
 ): Promise<any> => {
   try {
-    const serializedAuthData = serializeBigInt(authData);
     const response = await axios.put(
       `${YAKOA_BASE_URL}/${id.toLowerCase()}/brand-auth/${brandId}`,
-      serializedAuthData,
+      authData,
       {
         headers: {
           "X-API-KEY": YAKOA_API_KEY,

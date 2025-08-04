@@ -1,35 +1,45 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
 
-import registerRoutes from './routes/register';
-import yakoaRoutes from './routes/yakoaRoutes';
-import licenseRoutes from './routes/license';
-import infringementRoutes from './routes/infringement';
+// Import routes
+import registerRoutes from './routes/registerRoutes';
+import licenseRoutes from './routes/licenseRoutes';
+import infringementRoutes from './routes/infringementRoutes';
 
-// Load environment variables
+// Configure dotenv
 dotenv.config();
 
+// Create Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// API Routes
+// Routes
 app.use('/api/register', registerRoutes);
-app.use('/api/yakoa', yakoaRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/infringement', infringementRoutes);
 
-// Default route (optional)
-app.get('/', (_req, res) => {
-  res.send('✅ Yakoa + Etherlink backend is running!');
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
-// Start Server
+// Determine port
+const PORT = process.env.PORT || process.env.APP_PORT || 3000;
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+export default app;

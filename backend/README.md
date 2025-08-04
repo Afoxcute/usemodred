@@ -1,96 +1,70 @@
-# Etherlink IP Management Backend
+# ModredIP Backend - Railway Deployment
 
-This backend service provides IP (Intellectual Property) management functionality on the Etherlink testnet using the ModredIP smart contract.
+## Prerequisites
+- Railway account
+- GitHub repository with the project
+- Node.js 18.x
+- Yarn package manager
 
-## Features
+## Deployment Steps
 
-- **IP Registration**: Register IP assets on Etherlink testnet using ModredIP contract
-- **License Minting**: Mint licenses for IP assets with customizable terms
-- **IPFS Integration**: Upload metadata to IPFS for decentralized storage
-- **Yakoa Integration**: Submit registered IPs to Yakoa for monitoring
+### 1. Prepare Repository
+1. Ensure your repository has the following files:
+   - `Dockerfile`
+   - `railway.json`
+   - `.env.example`
+   - `package.json` with proper scripts
 
-## Environment Variables
+### 2. Environment Variables
+1. Create a `.env` file based on `.env.example`
+2. Set all required environment variables in Railway project settings
 
-Create a `.env` file in the backend directory:
+### 3. Railway Configuration
+- **Build**: Uses Dockerfile
+- **Start Command**: `yarn start`
+- **Port**: Dynamically assigned (default 3000)
+- **Health Check**: `/health` endpoint
 
-```env
-WALLET_PRIVATE_KEY=your_private_key_here
-RPC_PROVIDER_URL=https://node.ghostnet.etherlink.com
-NFT_CONTRACT_ADDRESS=optional_nft_contract_address
-```
+### Recommended Railway Settings
+- Node.js version: 18.x
+- Build command: `yarn build`
+- Start command: `yarn start`
 
-## API Endpoints
-
-### IP Registration
-- **POST** `/api/register`
-- **Body**:
-  ```json
-  {
-    "ipMetadata": {
-      "name": "IP Asset Name",
-      "description": "IP Asset Description",
-      "image": "https://ipfs.io/ipfs/...",
-      "creator": "0x...",
-      "created_at": "2024-01-01T00:00:00Z"
-    },
-    "nftMetadata": {
-      "name": "NFT Name",
-      "description": "NFT Description",
-      "image": "https://ipfs.io/ipfs/..."
-    },
-    "modredIpContractAddress": "0x0734d90FA1857C073c4bf1e57f4F4151BE2e9f82"
-  }
-  ```
-
-### License Minting
-- **POST** `/api/license/mint`
-- **Body**:
-  ```json
-  {
-    "ipAssetId": 1,
-    "licensee": "0x...",
-    "licenseTerms": {
-      "royaltyPercentage": 10,
-      "duration": 365,
-      "commercialUse": true,
-      "terms": "Commercial license terms..."
-    },
-    "modredIpContractAddress": "0x0734d90FA1857C073c4bf1e57f4F4151BE2e9f82"
-  }
-  ```
-
-## Network Configuration
-
-- **Network**: Etherlink Testnet
-- **Chain ID**: 128123
-- **RPC URL**: https://node.ghostnet.etherlink.com
-- **Explorer**: https://testnet.explorer.etherlink.com
-- **Native Token**: XTZ (used as WIP_TOKEN_ADDRESS)
-
-## Smart Contracts
-
-- **ModredIP**: Main contract for IP registration and license management
-- **ERC6551Registry**: Token-bound account registry
-- **ERC6551Account**: Token-bound account implementation
-
-## Installation
-
+## Local Development
 ```bash
-cd backend
+# Install dependencies
 yarn install
-```
 
-## Running the Server
+# Run development server
+yarn dev
 
-```bash
+# Build for production
+yarn build
+
+# Start production server
 yarn start
 ```
 
-The server will start on port 5000 by default.
+## Troubleshooting
+- Ensure all environment variables are set
+- Check Railway logs for deployment issues
+- Verify Dockerfile and `railway.json` configurations
 
-## Key Changes from Story Protocol
+## Environment Variables
+Refer to `.env.example` for required configuration keys.
 
-1. **Network**: Migrated from Story Protocol networks to Etherlink testnet
-2. **Token**: Using native XTZ token instead of WIP tokens
-3. **Contracts**: Using ModredIP contract instead of Story Protocol contracts
-4. **API**: Updated endpoints to work with Etherlink-specific functionality 
+### Key Variables
+- `PORT`: Server listening port
+- `NODE_ENV`: Application environment
+- `YAKOA_API_KEY`: Yakoa integration key
+- `PINATA_JWT`: IPFS pinning service token
+
+## Deployment Checklist
+- [x] Dockerfile present
+- [x] `railway.json` configured
+- [x] Environment variables set
+- [x] Health check endpoint implemented
+- [x] Production build scripts ready
+
+## Support
+For issues, please open a GitHub issue in the project repository. 

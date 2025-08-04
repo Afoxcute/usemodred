@@ -20,6 +20,41 @@ header h1 {
   font-size: 2rem;
 }
 
+.backend-status {
+  background-color: #2d2d2d;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.backend-status.connected {
+  background-color: #2d9cdb;
+}
+
+.backend-status.disconnected {
+  background-color: #ff4444;
+}
+
+.backend-status .refresh-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.backend-status .refresh-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .error-message {
   background-color: #ff4444;
   color: white;
@@ -32,6 +67,28 @@ header h1 {
 }
 
 .error-message button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+}
+
+.success-message {
+  background-color: #4caf50;
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  white-space: pre-line;
+}
+
+.success-message button {
   background: none;
   border: none;
   color: white;
@@ -173,7 +230,7 @@ button:disabled {
 .asset-card strong,
 .license-card strong {
   color: white;
-}
+  }
 
 /* Responsive design */
 @media (max-width: 768px) {
@@ -181,7 +238,7 @@ button:disabled {
     padding: 10px;
 }
 
-  header {
+header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
@@ -193,8 +250,8 @@ button:disabled {
   
   .section {
     padding: 15px;
-  }
-  
+}
+
   .assets-grid,
   .licenses-grid {
     grid-template-columns: 1fr;
@@ -356,69 +413,4 @@ button:disabled {
 
 .view-media-link:hover {
   background: #1f7bb8;
-}
-
-/* Yakoa Infringement Detection Styles */
-.subsection {
-  background: #2a3a4a;
-  border: 1px solid #344452;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.subsection h3 {
-  margin-top: 0;
-  color: #2d9cdb;
-  font-size: 1.2em;
-  margin-bottom: 15px;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.button-group button {
-  flex: 1;
-  min-width: 120px;
-}
-
-.status-card {
-  background: #1d2b39;
-  border: 1px solid #344452;
-  border-radius: 6px;
-  padding: 15px;
-  margin-top: 15px;
-}
-
-.status-card p {
-  margin: 5px 0;
-  font-size: 0.9em;
-  color: #858d92;
-}
-
-.media-item {
-  background: #2a3a4a;
-  border: 1px solid #344452;
-  border-radius: 4px;
-  padding: 10px;
-  margin: 5px 0;
-}
-
-.media-item p {
-  margin: 2px 0;
-  font-size: 0.85em;
-  color: #858d92;
-}
-
-.media-item a {
-  color: #2d9cdb;
-  text-decoration: none;
-  font-size: 0.85em;
-}
-
-.media-item a:hover {
-  text-decoration: underline;
 }

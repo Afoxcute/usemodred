@@ -15,15 +15,9 @@ import { createWallet, inAppWallet } from "thirdweb/wallets";
 import { parseEther, formatEther } from "viem";
 import { etherlinkTestnet } from "viem/chains";
 import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
-import { 
-  registerToYakoa, 
-  checkInfringementStatus,
-  updateYakoaToken,
-  getYakoaBrandAuth,
-  setYakoaBrandAuth,
-  deleteYakoaBrandAuth,
-  type YakoaResponse 
-} from "./services/yakoaService";
+
+// Backend API configuration
+const BACKEND_URL = "http://localhost:5000";
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes
@@ -89,7 +83,7 @@ const generateFilePreview = (file: File): Promise<string | null> => {
 };
 
 // Remove hardcoded Pinata credentials
-const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5MjJjNmZkOC04ZTZhLTQxMzUtODA4ZS05ZTkwZTMyMjViNTIiLCJlbWFpbCI6Imp3YXZvbGFiaWxvdmUwMDE2QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJjODQyN2NjYTM0YTQyYzExZTliOCIsInNjb3BlZEtleVNlY3JldCI6ImZmZDE0YjVkZmJiNDU2ZGE5ZTczMjczMGQ0ZDhiMTQ1ZDc3ZjUzYzU3NjYzMDM4MzhkMTM3NzlhOWRmZjZkOWYiLCJleHAiOjE3ODQ5Mjk1NDN9.7QnHrZdX0fjVOud63RUZc4ip9x15PlgViz60EMn9Cao";
+const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5MjJjNmZkOC04ZTZhLTQxMzUtODA4ZS05ZTkwZTMyMjViNTIiLCJlbWFpbCI6Imp3YXZvbGFiaWxvdmUwMDE2QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiJkZDI1MzM4YmRmYTdjNzlmYjY4NyIsInNjb3BlZEtleVNlY3JldCI6ImFiYTJjMzcwNWExMzNlZmVjNzM3NzQwZGNjMGJjOTE4MGY2M2IzZjkxY2E5MzVlYWE3NzUxMDhjOGNkYjMyZDciLCJleHAiOjE3ODU3NDg3ODh9.I6RIrBphVycV-75XK_pippeZngj6QntUZZjFMnGtqFA";
 
 /**
  * Uploads a file to IPFS via Pinata
@@ -107,76 +101,55 @@ const pinFileToIPFS = async (file: File): Promise<{
       throw new Error('Pinata JWT is not configured. Please set VITE_PINATA_JWT in your environment.');
     }
 
-    // Create a FormData object to send the file
+    // Create form data
     const formData = new FormData();
     formData.append('file', file);
 
     // Add metadata
-    const metadata = JSON.stringify({
+    const metadata = {
       name: file.name,
-      keyvalues: {
-        uploadedAt: new Date().toISOString(),
+      description: `Uploaded via ModredIP frontend`,
+      attributes: {
+        uploadedBy: 'ModredIP',
+        timestamp: new Date().toISOString(),
         fileType: file.type,
         fileSize: file.size
       }
-    });
-    formData.append('pinataMetadata', metadata);
-
-    // Add options
-    const options = JSON.stringify({
-      cidVersion: 1,
-    });
-    formData.append('pinataOptions', options);
-
-    // Prepare headers
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${PINATA_JWT}`
     };
+    formData.append('pinataMetadata', JSON.stringify(metadata));
 
-    console.log('Uploading file to Pinata:', {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size
-    });
-
-    // Make API call to Pinata
+    // Make request to Pinata
     const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
       method: 'POST',
-      headers,
-      body: formData,
+      headers: {
+        'Authorization': `Bearer ${PINATA_JWT}`
+      },
+      body: formData
     });
 
-    console.log('Pinata Response Status:', response.status);
-
-    // Check response status
     if (!response.ok) {
-      // Try to parse error details
-      let errorDetails = '';
-      try {
-        const errorData = await response.json();
-        console.error('Pinata Error Response:', errorData);
-        errorDetails = JSON.stringify(errorData);
-      } catch (parseError) {
-        console.error('Could not parse error response');
-      }
-
-      throw new Error(`Pinata upload failed. Status: ${response.status}. Details: ${errorDetails}`);
+      const errorText = await response.text();
+      console.error('Pinata API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error(`Pinata upload failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    // Parse successful response
-    const data = await response.json();
-    console.log('Pinata Upload Success:', data);
+    const result = await response.json();
+    console.log('Pinata upload successful:', result);
 
     return {
       success: true,
-      cid: data.IpfsHash,
+      cid: result.IpfsHash,
+      message: 'File uploaded successfully to IPFS'
     };
-  } catch (error: any) {
-    console.error('Complete Error in pinFileToIPFS:', error);
-    
+  } catch (error) {
+    console.error('Error uploading to IPFS:', error);
     return {
       success: false,
-      message: error.message || 'Failed to upload to IPFS',
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };
@@ -396,7 +369,9 @@ export default function App({ thirdwebClient }: AppProps) {
   const account = useActiveAccount();
 
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [backendStatus, setBackendStatus] = useState<boolean>(false);
   
   // IP Assets state
   const [ipAssets, setIpAssets] = useState<Map<number, IPAsset>>(new Map());
@@ -437,15 +412,22 @@ export default function App({ thirdwebClient }: AppProps) {
   
   const [claimTokenId, setClaimTokenId] = useState<number>(1);
 
-  // Yakoa infringement detection state
-  const [yakoaStatus, setYakoaStatus] = useState<YakoaResponse | null>(null);
-  const [infringementLoading, setInfringementLoading] = useState(false);
-  const [infringementError, setInfringementError] = useState<string | null>(null);
-  const [selectedAssetForInfringement, setSelectedAssetForInfringement] = useState<string>("");
-  const [brandAuthId, setBrandAuthId] = useState("");
-  const [brandAuthData, setBrandAuthData] = useState("");
-
   const [filePreview, setFilePreview] = useState<string | null>(null);
+
+  // Check backend status
+  const checkBackendStatus = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/`);
+      setBackendStatus(response.ok);
+    } catch (error) {
+      setBackendStatus(false);
+    }
+  };
+
+  // Check backend status on component mount
+  useEffect(() => {
+    checkBackendStatus();
+  }, []);
 
   // Handle file selection for IP asset
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -658,7 +640,7 @@ export default function App({ thirdwebClient }: AppProps) {
     return `ipfs://${metadataUploadResult.cid}`;
   };
 
-  // Modify registerIP to use new metadata creation
+  // Register IP using backend API
   const registerIP = async () => {
     if (!account?.address || !ipHash || !ipName.trim()) {
       setError("Please fill in all required fields (IP Hash and Name are required)");
@@ -672,29 +654,83 @@ export default function App({ thirdwebClient }: AppProps) {
       // Create and upload metadata to IPFS
       const metadataUri = await createNFTMetadata(ipHash, ipName, ipDescription, isEncrypted);
 
-      const contract = getContract({
-        abi: MODRED_IP_ABI,
-            client: thirdwebClient,
-            chain: defineChain(etherlinkTestnet.id),
-        address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
+      // Prepare comprehensive IP metadata for backend and infringement detection
+      const ipMetadata = {
+        name: ipName,
+        description: ipDescription,
+        image: metadataUri,
+        creator: account.address,
+        created_at: new Date().toISOString(),
+        // Additional metadata for better infringement detection
+        content_type: ipFile?.type || 'unknown',
+        file_size: ipFile?.size || 0,
+        mime_type: ipFile?.type || 'unknown',
+        tags: [], // Could be enhanced with user input
+        category: 'general', // Could be enhanced with user input
+        license_type: 'all_rights_reserved',
+        commercial_use: false,
+        derivatives_allowed: false,
+        creator_email: 'creator@modredip.com', // Could be enhanced with user input
+        // File-specific metadata
+        file_name: ipFile?.name || 'unknown',
+        file_extension: ipFile?.name?.split('.').pop() || 'unknown',
+        upload_timestamp: new Date().toISOString(),
+        // Blockchain metadata
+        network: 'etherlink',
+        chain_id: '128123',
+        contract_address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
+        // Infringement detection metadata
+        monitoring_enabled: true,
+        infringement_alerts: true,
+        content_hash: ipHash,
+        original_filename: ipFile?.name || 'unknown'
+      };
+
+      // Prepare NFT metadata for backend
+      const nftMetadata = {
+        name: ipName,
+        description: ipDescription,
+        image: metadataUri,
+        attributes: [
+          {
+            trait_type: "IP Hash",
+            value: ipHash
+          },
+          {
+            trait_type: "Creator",
+            value: account.address
+          },
+          {
+            trait_type: "Encrypted",
+            value: isEncrypted
+          }
+        ]
+      };
+
+      // Call backend API
+      const response = await fetch(`${BACKEND_URL}/api/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ipHash: ipHash,
+          metadata: JSON.stringify(ipMetadata),
+          isEncrypted: isEncrypted,
+          modredIpContractAddress: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]
+        })
       });
 
-      const preparedCall = await prepareContractCall({
-        contract,
-        method: "registerIP",
-        params: [ipHash, metadataUri, isEncrypted],
-      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to register IP');
+      }
 
-        const transaction = await sendTransaction({
-        transaction: preparedCall,
-        account: account,
-        });
+      const result = await response.json();
+      console.log('IP Registration successful:', result);
 
-      await waitForReceipt({
-          client: thirdwebClient,
-          chain: defineChain(etherlinkTestnet.id),
-          transactionHash: transaction.transactionHash,
-        });
+      // Show success message
+      setSuccess(`✅ IP Asset registered successfully!\nTransaction: ${result.etherlink.txHash}\nIP Asset ID: ${result.etherlink.ipAssetId}`);
 
       // Reset form
       setIpFile(null);
@@ -706,36 +742,17 @@ export default function App({ thirdwebClient }: AppProps) {
       // Reload data
       await loadContractData();
 
-      // Get the next token ID for Yakoa registration
-      const nextTokenId = await readContract({
-        contract,
-        method: "nextTokenId",
-        params: [],
-      });
-
-      // Automatically register with Yakoa for infringement detection
-      try {
-        const tokenId = Number(nextTokenId) - 1; // The newly registered token
-        const mockBlockNumber = BigInt(1234567); // In production, get from transaction receipt
-        
-        await registerIPWithYakoa(tokenId, transaction.transactionHash, mockBlockNumber);
-      } catch (yakoaError) {
-        console.error("Yakoa registration failed:", yakoaError);
-        // Don't fail the main registration if Yakoa fails
-        setError("IP registered successfully, but Yakoa registration failed. You can register manually later.");
-      }
-
       } catch (error) {
       console.error("Error registering IP:", error);
-      setError("Failed to register IP asset");
+      setError(error instanceof Error ? error.message : "Failed to register IP asset");
     } finally {
       setLoading(false);
     }
   };
 
-  // Mint License
+  // Mint License using backend API
   const mintLicense = async () => {
-    if (!account?.address || !licenseTerms) {
+    if (!account?.address || !selectedTokenId) {
       setError("Please fill in all required fields");
       return;
     }
@@ -744,35 +761,54 @@ export default function App({ thirdwebClient }: AppProps) {
       setLoading(true);
       setError("");
 
-        const contract = getContract({
-        abi: MODRED_IP_ABI,
-          client: thirdwebClient,
-          chain: defineChain(etherlinkTestnet.id),
-        address: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"],
-        });
+      // Prepare license terms for backend
+      const licenseTerms = {
+        tokenId: selectedTokenId,
+        royaltyPercentage: royaltyPercentage,
+        duration: licenseDuration,
+        commercialUse: commercialUse,
+        terms: JSON.stringify({
+          transferable: true,
+          commercialAttribution: commercialAttribution,
+          commercializerChecker: commercializerChecker,
+          commercializerCheckerData: commercializerCheckerData,
+          commercialRevShare: commercialRevShare,
+          commercialRevCeiling: commercialRevCeiling,
+          derivativesAllowed: derivativesAllowed,
+          derivativesAttribution: derivativesAttribution,
+          derivativesApproval: derivativesApproval,
+          derivativesReciprocal: derivativesReciprocal,
+          derivativeRevCeiling: derivativeRevCeiling,
+          currency: licenseCurrency
+        })
+      };
 
-      const preparedCall = await prepareContractCall({
-          contract,
-        method: "mintLicense",
-        params: [
-          BigInt(selectedTokenId),
-          BigInt(royaltyPercentage * 100), // Convert percentage to basis points
-          BigInt(licenseDuration),
-          commercialUse,
-          licenseTerms
-        ],
-        });
+      // Call backend API
+      const response = await fetch(`${BACKEND_URL}/api/license/mint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tokenId: selectedTokenId,
+          royaltyPercentage: royaltyPercentage,
+          duration: licenseDuration,
+          commercialUse: commercialUse,
+          terms: licenseTerms.terms,
+          modredIpContractAddress: CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]
+        })
+      });
 
-        const transaction = await sendTransaction({
-        transaction: preparedCall,
-        account: account,
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to mint license');
+      }
 
-      await waitForReceipt({
-          client: thirdwebClient,
-          chain: defineChain(etherlinkTestnet.id),
-          transactionHash: transaction.transactionHash,
-        });
+      const result = await response.json();
+      console.log('License minting successful:', result);
+
+      // Show success message
+      setSuccess(`✅ License minted successfully!\nTransaction: ${result.data.txHash}`);
 
       // Reset form
       setSelectedTokenId(1);
@@ -795,9 +831,9 @@ export default function App({ thirdwebClient }: AppProps) {
       // Reload data
       await loadContractData();
 
-      } catch (error) {
+    } catch (error) {
       console.error("Error minting license:", error);
-      setError("Failed to mint license");
+      setError(error instanceof Error ? error.message : "Failed to mint license");
     } finally {
       setLoading(false);
     }
@@ -900,138 +936,6 @@ export default function App({ thirdwebClient }: AppProps) {
     }
   };
 
-  // Yakoa infringement detection functions
-  const registerIPWithYakoa = async (tokenId: number, transactionHash: string, blockNumber: bigint) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      const ipAsset = ipAssets.get(tokenId);
-      if (!ipAsset) {
-        throw new Error("IP Asset not found");
-      }
-
-      // Parse metadata to get IP details
-      const metadata = parsedMetadata.get(tokenId);
-      if (!metadata) {
-        throw new Error("IP Asset metadata not found");
-      }
-
-      const yakoaId = `${CONTRACT_ADDRESS_JSON["ModredIPModule#ModredIP"]}:${tokenId}`;
-      
-      const yakoaResponse = await registerToYakoa({
-        id: yakoaId,
-        transactionHash: transactionHash as `0x${string}`,
-        blockNumber: blockNumber, // BigInt will be converted to string in the service
-        creatorId: ipAsset.owner,
-        metadata: {
-          title: metadata.name || `IP Asset ${tokenId}`,
-          description: metadata.description || "IP Asset registered on ModredIP",
-        },
-        media: [
-          {
-            media_id: metadata.name || `IP Asset ${tokenId}`,
-            url: getIPFSGatewayURL(ipAsset.ipHash),
-          },
-        ],
-      });
-
-      setYakoaStatus(yakoaResponse);
-      setError("✅ IP Asset successfully registered with Yakoa for infringement detection!");
-      
-    } catch (error) {
-      console.error("Error registering with Yakoa:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to register with Yakoa");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
-  const checkInfringement = async (assetId: string) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      const yakoaResponse = await checkInfringementStatus(assetId);
-      setYakoaStatus(yakoaResponse);
-      
-    } catch (error) {
-      console.error("Error checking infringement:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to check infringement status");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
-  const updateIPMetadata = async (assetId: string, metadata: Record<string, string>) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      const yakoaResponse = await updateYakoaToken(assetId, metadata);
-      setYakoaStatus(yakoaResponse);
-      setError("✅ IP Asset metadata updated successfully!");
-      
-    } catch (error) {
-      console.error("Error updating metadata:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to update metadata");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
-
-
-  const getBrandAuthorization = async (assetId: string, brandId: string) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      const brandAuth = await getYakoaBrandAuth(assetId, brandId);
-      console.log("Brand Authorization:", brandAuth);
-      setError("✅ Brand authorization retrieved successfully!");
-      
-    } catch (error) {
-      console.error("Error getting brand auth:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to get brand authorization");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
-  const setBrandAuthorization = async (assetId: string, brandId: string, authData: any) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      const brandAuth = await setYakoaBrandAuth(assetId, brandId, authData);
-      console.log("Brand Authorization Set:", brandAuth);
-      setError("✅ Brand authorization set successfully!");
-      
-    } catch (error) {
-      console.error("Error setting brand auth:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to set brand authorization");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
-  const deleteBrandAuthorization = async (assetId: string, brandId: string) => {
-    try {
-      setInfringementLoading(true);
-      setInfringementError(null);
-
-      await deleteYakoaBrandAuth(assetId, brandId);
-      setError("✅ Brand authorization deleted successfully!");
-      
-    } catch (error) {
-      console.error("Error deleting brand auth:", error);
-      setInfringementError(error instanceof Error ? error.message : "Failed to delete brand authorization");
-    } finally {
-      setInfringementLoading(false);
-    }
-  };
-
   return (
     <div className="app">
       <header>
@@ -1045,11 +949,24 @@ export default function App({ thirdwebClient }: AppProps) {
           </div>
       </header>
 
+      {/* Backend Status */}
+      <div className={`backend-status ${backendStatus ? 'connected' : 'disconnected'}`}>
+        Backend: {backendStatus ? '🟢 Connected' : '🔴 Disconnected'}
+        <button onClick={checkBackendStatus} className="refresh-btn">🔄</button>
+      </div>
+
       {error && (
         <div className="error-message">
           {error}
           <button onClick={() => setError("")}>×</button>
                       </div>
+      )}
+
+      {success && (
+        <div className="success-message">
+          {success}
+          <button onClick={() => setSuccess("")}>×</button>
+        </div>
       )}
 
       {loading && <div className="loading">Loading...</div>}
@@ -1083,7 +1000,7 @@ export default function App({ thirdwebClient }: AppProps) {
                 ) : (
                   <p>{filePreview}</p>
                 )}
-              </div>
+        </div>
             )}
             <button 
               className="file-upload-button"
@@ -1126,7 +1043,7 @@ export default function App({ thirdwebClient }: AppProps) {
                     <p><strong>File:</strong> {ipFile?.name}</p>
                     <p><strong>IPFS URL:</strong> <a href={ipHash} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{ipHash}</a></p>
                     <p><strong>Gateway URL:</strong> <a href={getIPFSGatewayURL(ipHash)} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{getIPFSGatewayURL(ipHash)}</a></p>
-                      </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1437,8 +1354,8 @@ export default function App({ thirdwebClient }: AppProps) {
                         </div>
                       </div>
                     )}
-        </div>
-
+                  </div>
+                  
                   <p><strong>Owner:</strong> {asset.owner.substring(0, 10)}...</p>
                   <p><strong>Description:</strong> {metadata.description || "No description"}</p>
                   <p><strong>IP Hash:</strong> {asset.ipHash.substring(0, 20)}...</p>
@@ -1469,209 +1386,6 @@ export default function App({ thirdwebClient }: AppProps) {
               </div>
             ))}
         </div>
-        </section>
-
-        {/* Yakoa IP Infringement Detection */}
-        <section className="section">
-          <h2>🔍 IP Infringement Detection (Yakoa)</h2>
-          
-          {infringementError && (
-            <div className="error-message">
-              {infringementError}
-              <button onClick={() => setInfringementError(null)}>×</button>
-            </div>
-          )}
-
-          {/* Register IP with Yakoa */}
-          <div className="subsection">
-            <h3>Register IP Asset for Infringement Detection</h3>
-            <div className="form-group">
-              <label>Select IP Asset:</label>
-              <select
-                value={selectedAssetForInfringement}
-                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
-              >
-                <option value="">Select an IP Asset</option>
-                {Array.from(ipAssets.keys()).map((id) => {
-                  const asset = ipAssets.get(id);
-                  const metadata = parsedMetadata.get(id) || { name: "Unknown" };
-                  return (
-                    <option key={id} value={id}>
-                      Token #{id} - {metadata.name || asset?.ipHash.substring(0, 10) || 'Unknown'}...
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            <button 
-              onClick={() => {
-                const tokenId = parseInt(selectedAssetForInfringement);
-                if (tokenId && ipAssets.has(tokenId)) {
-                  // For demo purposes, using mock transaction data
-                  const mockTxHash = "0x" + "a".repeat(64);
-                  const mockBlockNumber = BigInt(1234567);
-                  registerIPWithYakoa(tokenId, mockTxHash, mockBlockNumber);
-                }
-              }} 
-              disabled={infringementLoading || !selectedAssetForInfringement || !account?.address}
-            >
-              {infringementLoading ? 'Registering...' : 'Register with Yakoa'}
-            </button>
-        </div>
-
-          {/* Check Infringement Status */}
-          <div className="subsection">
-            <h3>Check Infringement Status</h3>
-            <div className="form-group">
-              <label>Asset ID (contract:tokenId):</label>
-              <input
-                type="text"
-                value={selectedAssetForInfringement}
-                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
-                placeholder="0x1234...:123"
-              />
-            </div>
-            <button 
-              onClick={() => checkInfringement(selectedAssetForInfringement)}
-              disabled={infringementLoading || !selectedAssetForInfringement}
-            >
-              {infringementLoading ? 'Checking...' : 'Check Status'}
-            </button>
-      </div>
-
-          {/* Update IP Metadata */}
-          <div className="subsection">
-            <h3>Update IP Metadata</h3>
-            <div className="form-group">
-              <label>Asset ID:</label>
-              <input
-                type="text"
-                value={selectedAssetForInfringement}
-                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
-                placeholder="0x1234...:123"
-              />
-            </div>
-            <div className="form-group">
-              <label>New Title:</label>
-              <input
-                type="text"
-                placeholder="Updated IP Title"
-                id="new-title"
-              />
-            </div>
-            <div className="form-group">
-              <label>New Description:</label>
-              <textarea
-                placeholder="Updated IP Description"
-                id="new-description"
-              />
-            </div>
-            <button 
-              onClick={() => {
-                const titleInput = document.getElementById('new-title') as HTMLInputElement;
-                const descInput = document.getElementById('new-description') as HTMLTextAreaElement;
-                const metadata = {
-                  title: titleInput?.value || '',
-                  description: descInput?.value || ''
-                };
-                updateIPMetadata(selectedAssetForInfringement, metadata);
-              }}
-              disabled={infringementLoading || !selectedAssetForInfringement}
-            >
-              {infringementLoading ? 'Updating...' : 'Update Metadata'}
-            </button>
-          </div>
-
-          {/* Brand Authorization Management */}
-          <div className="subsection">
-            <h3>Brand Authorization Management</h3>
-            <div className="form-group">
-              <label>Asset ID:</label>
-              <input
-                type="text"
-                value={selectedAssetForInfringement}
-                onChange={(e) => setSelectedAssetForInfringement(e.target.value)}
-                placeholder="0x1234...:123"
-              />
-            </div>
-            <div className="form-group">
-              <label>Brand ID:</label>
-              <input
-                type="text"
-                value={brandAuthId}
-                onChange={(e) => setBrandAuthId(e.target.value)}
-                placeholder="brand123"
-              />
-            </div>
-            <div className="form-group">
-              <label>Authorization Data (JSON):</label>
-        <textarea
-                value={brandAuthData}
-                onChange={(e) => setBrandAuthData(e.target.value)}
-                placeholder='{"permission": "read", "expiry": "2024-12-31"}'
-              />
-            </div>
-            <div className="button-group">
-              <button 
-                onClick={() => getBrandAuthorization(selectedAssetForInfringement, brandAuthId)}
-                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId}
-              >
-                {infringementLoading ? 'Getting...' : 'Get Brand Auth'}
-              </button>
-              <button 
-                onClick={() => {
-                  try {
-                    const authData = JSON.parse(brandAuthData);
-                    setBrandAuthorization(selectedAssetForInfringement, brandAuthId, authData);
-                  } catch (error) {
-                    setInfringementError("Invalid JSON in authorization data");
-                  }
-                }}
-                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId || !brandAuthData}
-              >
-                {infringementLoading ? 'Setting...' : 'Set Brand Auth'}
-              </button>
-              <button 
-                onClick={() => deleteBrandAuthorization(selectedAssetForInfringement, brandAuthId)}
-                disabled={infringementLoading || !selectedAssetForInfringement || !brandAuthId}
-              >
-                {infringementLoading ? 'Deleting...' : 'Delete Brand Auth'}
-              </button>
-            </div>
-          </div>
-
-          {/* Yakoa Status Display */}
-          {yakoaStatus && (
-            <div className="subsection">
-              <h3>Yakoa Status</h3>
-              <div className="status-card">
-                <p><strong>Asset ID:</strong> {yakoaStatus.id}</p>
-                <p><strong>Title:</strong> {yakoaStatus.metadata?.title || 'N/A'}</p>
-                <p><strong>Description:</strong> {yakoaStatus.metadata?.description || 'N/A'}</p>
-                <p><strong>Creator:</strong> {yakoaStatus.creator_id}</p>
-                <p><strong>Registration Block:</strong> {yakoaStatus.registration_tx?.block_number?.toString()}</p>
-                <p><strong>Transaction Hash:</strong> {yakoaStatus.registration_tx?.hash}</p>
-                <p><strong>Infringement Status:</strong> {
-                  yakoaStatus.infringements?.result === 'checked' ? '✅ Checked' :
-                  yakoaStatus.infringements?.result === 'infringed' ? '❌ Infringed' :
-                  '⏳ Not Checked'
-                }</p>
-                {yakoaStatus.media && yakoaStatus.media.length > 0 && (
-                  <div>
-                    <p><strong>Media:</strong></p>
-                    {yakoaStatus.media.map((media, index) => (
-                      <div key={index} className="media-item">
-                        <p>ID: {media.media_id}</p>
-                        <a href={media.url} target="_blank" rel="noopener noreferrer">
-                          View Media
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </section>
       </div>
     </div>

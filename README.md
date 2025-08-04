@@ -1,168 +1,213 @@
-# ModredIP - ERC-6551 Intellectual Property Management System
+# ModredIP - Intellectual Property Management System
 
-This project implements the **ModredIP** system, a comprehensive intellectual property management platform built on the **Etherlink blockchain** using the **ERC-6551 token standard**. It provides creators with tools to register, license, and monetize their intellectual property with built-in protection and automated revenue distribution.
+A comprehensive IP management system built on the Etherlink blockchain, featuring IP asset registration, license management, revenue sharing, and dispute resolution.
 
-## 🎯 **Executive Summary**
+## 🚀 Features
 
-**ModredIP** addresses critical challenges in the digital IP ecosystem:
+### Core Functionality
+- **IP Asset Registration**: Register off-chain IP (books, images, songs) as NFTs with metadata stored on IPFS
+- **License Management**: Mint programmable license tokens with detailed terms (commercial use, attribution, revenue share, derivatives)
+- **Revenue Payment**: Tip IP assets or pay revenue percentages
+- **Revenue Claiming**: Claim accumulated royalties from IP asset vaults
+- **Dispute Resolution**: Raise and resolve disputes against IP assets using on-chain arbitration
 
-- **IP Protection**: Prevents unauthorized use and ensures proper attribution
-- **Revenue Generation**: Enables creators to monetize their IP through licensing
-- **Automated Royalties**: Transparent and automatic revenue distribution
-- **Dispute Resolution**: On-chain dispute system with arbitration capabilities
-- **AI Compatibility**: Designed to work with AI systems and automated content detection
-
-## 🏗️ **Core Features**
-
-### **IP Registration & Ownership**
-- Register any IP asset (images, music, text, AI training data, etc.) as NFTs
-- ERC-6551 token-bound accounts for each IP asset
-- Immutable on-chain record of ownership and metadata
-- Support for encrypted IP content
-
-### **Licensing System**
-- Mint license tokens with customizable terms
-- Configurable royalty percentages and duration
-- Commercial use permissions
-- Automated license tracking and enforcement
-
-### **Revenue Management**
-- Automated royalty distribution based on license terms
-- Platform fee collection (configurable, default 2.5%)
-- Real-time revenue tracking and claiming
-- Transparent payment history
-
-### **Dispute Resolution**
-- On-chain dispute raising system
-- Arbitration support for conflict resolution
-- Automatic IP flagging during disputes
-- Resolution tracking and enforcement
-
-### **ERC-6551 Integration**
-- Each IP asset gets its own token-bound account
-- Enables complex IP management workflows
-- Supports multi-signature and DAO governance
-- Programmable IP behavior
-
-## 🔧 **Technical Architecture**
-
-### **Smart Contracts**
-- **`ModredIP.sol`**: Main IP management contract
-- **`ERC6551Registry.sol`**: Registry for token-bound accounts
-- **`ERC6551Account.sol`**: Token-bound account implementation
-
-### **Key Components**
-- **IP Assets**: ERC-721 NFTs representing intellectual property
-- **License Tokens**: On-chain licenses with revenue sharing
-- **Royalty Vaults**: Automated revenue distribution system
-- **Dispute Module**: Conflict resolution and arbitration
-
-### **Technology Stack**
-- **Blockchain**: Etherlink (Tezos EVM-compatible L2)
-- **Smart Contracts**: Solidity 0.8.24
-- **Development**: Hardhat + TypeChain
+### Technical Stack
+- **Blockchain**: Etherlink Testnet (Chain ID: 128123)
+- **Smart Contracts**: Solidity with ERC-6551 token standard
+- **Frontend**: React + TypeScript + Vite + Thirdweb SDK
+- **Backend**: Node.js + Express + TypeScript + Viem
+- **Storage**: IPFS via Pinata
 - **Deployment**: Hardhat Ignition
-- **Testing**: Comprehensive test suite
 
-## 🚀 **Getting Started**
+## 🏗️ Architecture
 
-### **Prerequisites**
+### Frontend-Backend Integration
+The system uses a hybrid approach where:
+- **Frontend**: Handles user interface, file uploads, and metadata creation
+- **Backend**: Manages blockchain interactions, contract calls, and API endpoints
+- **Smart Contracts**: Execute on-chain logic and store IP asset data
+
+### API Endpoints
+- `POST /api/register` - Register IP assets with metadata
+- `POST /api/license/mint` - Mint license tokens with detailed terms
+- `GET /` - Backend health check
+
+## 🛠️ Setup & Installation
+
+### Prerequisites
 - Node.js 18+
 - Yarn package manager
-- Hardhat development environment
+- Etherlink testnet wallet with XTZ tokens
 
-### **Installation**
+### 1. Clone and Install Dependencies
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd etherlink-marketpulse
 
-# Install dependencies
+# Install root dependencies
 yarn install
 
-# Compile contracts
-npx hardhat compile
+# Install frontend dependencies
+cd app
+yarn install
 
-# Run tests
-npx hardhat test
+# Install backend dependencies
+cd ../backend
+yarn install
 ```
 
-### **Deployment**
+### 2. Environment Configuration
+Create `.env` files in both `app/` and `backend/` directories:
+
+**Frontend (.env)**
+```env
+VITE_PINATA_JWT=your_pinata_jwt_token
+```
+
+**Backend (.env)**
+```env
+PRIVATE_KEY=your_private_key
+PINATA_API_KEY=your_pinata_api_key
+PINATA_API_SECRET=your_pinata_api_secret
+```
+
+### 3. Deploy Smart Contracts
 ```bash
-# Set environment variables
-export DEPLOYER_PRIVATE_KEY=your_private_key
-
 # Deploy to Etherlink testnet
-npx hardhat ignition deploy ignition/modules/ModredIP.ts --network etherlinkTestnet
+npx hardhat ignition deploy ignition/modules/ModredIP.ts --network etherlink-testnet
 ```
 
-## 📋 **Usage Examples**
+### 4. Update Contract Addresses
+After deployment, update `app/src/deployed_addresses.json` with the new contract addresses.
 
-### **Registering IP**
-```solidity
-// Register a new IP asset
-await modredIP.registerIP(
-    "QmIPContentHash", // IPFS hash of content
-    "QmMetadataHash",  // IPFS hash of metadata
-    false              // Not encrypted
-);
+### 5. Start Development Servers
+
+**Backend (Terminal 1)**
+```bash
+cd backend
+yarn dev
+# Server runs on http://localhost:5000
 ```
 
-### **Minting a License**
-```solidity
-// Mint a license with 10% royalty
-await modredIP.mintLicense(
-    1,                    // IP token ID
-    1000,                 // 10% royalty (in basis points)
-    86400,                // 1 day duration
-    true,                 // Commercial use allowed
-    "QmLicenseTerms"      // IPFS hash of license terms
-);
+**Frontend (Terminal 2)**
+```bash
+cd app
+yarn dev
+# App runs on http://localhost:5173
 ```
 
-### **Paying Revenue**
-```solidity
-// Pay revenue to IP asset
-await modredIP.payRevenue(1, { value: ethers.parseEther("1.0") });
+## 📱 Usage
+
+### 1. Connect Wallet
+- Use the ConnectButton to connect your Etherlink wallet
+- Ensure you have XTZ tokens for gas fees
+
+### 2. Register IP Asset
+1. Upload your IP file (PDF, image, audio, etc.)
+2. Enter IP name and description
+3. Click "Upload to IPFS" to store metadata
+4. Click "Register IP" to create the asset on-chain
+
+### 3. Mint License
+1. Select an IP asset from the dropdown
+2. Configure license terms (commercial use, attribution, etc.)
+3. Click "Mint License" to create the license token
+
+### 4. Manage Revenue
+- **Pay Revenue**: Send payments to IP assets
+- **Claim Royalties**: Withdraw accumulated royalties
+
+## 🔧 Development
+
+### Project Structure
+```
+etherlink-marketpulse/
+├── app/                    # Frontend React application
+│   ├── src/
+│   │   ├── App.tsx        # Main application component
+│   │   └── deployed_addresses.json
+├── backend/               # Backend Express server
+│   ├── src/
+│   │   ├── controllers/   # API route handlers
+│   │   ├── services/      # Business logic
+│   │   └── routes/        # API route definitions
+├── contracts/             # Smart contracts
+│   ├── ModredIP.sol      # Main IP management contract
+│   ├── ERC6551Registry.sol
+│   └── ERC6551Account.sol
+└── ignition/             # Deployment configuration
+    └── modules/
+        └── ModredIP.ts
 ```
 
-### **Claiming Royalties**
-```solidity
-// Claim earned royalties
-await modredIP.claimRoyalties(1);
+### Key Components
+
+#### Frontend Integration
+- **Backend API Calls**: Frontend makes HTTP requests to backend endpoints
+- **File Upload**: Direct IPFS upload via Pinata API
+- **Metadata Management**: JSON metadata creation and storage
+- **Real-time Status**: Backend connection status indicator
+
+#### Backend Services
+- **IP Registration**: Handles contract interactions for IP asset creation
+- **License Minting**: Manages license token creation with detailed terms
+- **Yakoa Integration**: IP infringement monitoring
+- **Error Handling**: Comprehensive error management and logging
+
+#### Smart Contracts
+- **ModredIP.sol**: Core IP management functionality
+- **ERC-6551**: Token-bound accounts for IP ownership
+- **Royalty System**: Automated revenue distribution
+- **Dispute Resolution**: On-chain arbitration mechanisms
+
+## 🧪 Testing
+
+### Run Tests
+```bash
+# Smart contract tests
+npx hardhat test
+
+# Frontend build test
+cd app
+yarn build
+
+# Backend test
+cd backend
+yarn dev
 ```
 
-## 🛡️ **Security Features**
+### Test Network
+- **Network**: Etherlink Testnet (Ghostnet)
+- **Chain ID**: 128123
+- **Native Token**: XTZ
+- **Explorer**: https://testnet-explorer.etherlink.com
 
-- **Reentrancy Protection**: Prevents reentrancy attacks
-- **Access Control**: Role-based permissions
-- **Input Validation**: Comprehensive parameter validation
-- **Emergency Pauses**: Admin controls for critical functions
-- **Dispute Protection**: Prevents transfers during disputes
+## 🔒 Security
 
-## 📊 **Economic Model**
+- **Private Key Management**: Use environment variables for sensitive data
+- **IPFS Security**: Metadata stored on decentralized IPFS network
+- **Smart Contract Audits**: Contracts follow OpenZeppelin security patterns
+- **Input Validation**: Comprehensive validation on both frontend and backend
 
-- **Platform Fees**: 2.5% of all revenue (configurable)
-- **Royalty Distribution**: Based on license terms
-- **Gas Optimization**: Efficient contract design
-- **Scalable Architecture**: Supports high transaction volumes
+## 📄 License
 
-## 🔮 **Future Enhancements**
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-- **AI Integration**: Automated infringement detection
-- **Cross-Chain Support**: Multi-chain IP management
-- **Advanced Licensing**: Time-based and conditional licenses
-- **DAO Governance**: Community-driven dispute resolution
-- **IP Marketplace**: Secondary market for IP assets
+## 🤝 Contributing
 
-## 📄 **License**
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+## 📞 Support
 
-## 🤝 **Contributing**
-
-We welcome contributions! Please see our contributing guidelines for more information.
+For issues and questions:
+- Create an issue on GitHub
+- Check the documentation
+- Review the smart contract code
 
 ---
 
-**ModredIP** - Empowering creators with programmable intellectual property management on the blockchain.
+**Built with ❤️ for the Etherlink ecosystem**

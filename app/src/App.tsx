@@ -17,7 +17,7 @@ import { etherlinkTestnet } from "viem/chains";
 import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
 
 // Backend API configuration
-const BACKEND_URL = "https://usemodred-production.up.railway.app";
+const BACKEND_URL = "http://localhost:5000";
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes
@@ -687,25 +687,7 @@ export default function App({ thirdwebClient }: AppProps) {
       };
 
       // Prepare NFT metadata for backend
-      // const nftMetadata = {
-      //   name: ipName,
-      //   description: ipDescription,
-      //   image: metadataUri,
-      //   attributes: [
-      //     {
-      //       trait_type: "IP Hash",
-      //       value: ipHash
-      //     },
-      //     {
-      //       trait_type: "Creator",
-      //       value: account.address
-      //     },
-      //     {
-      //       trait_type: "Encrypted",
-      //       value: isEncrypted
-      //     }
-      //   ]
-      // };
+      
 
       // Call backend API
       const response = await fetch(`${BACKEND_URL}/api/register`, {

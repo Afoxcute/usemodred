@@ -10,6 +10,26 @@ const SUBDOMAIN = process.env.YAKOA_SUBDOMAIN!;
 const NETWORK = process.env.YAKOA_NETWORK!;
 const REGISTER_TOKEN_URL = `https://${SUBDOMAIN}.ip-api-sandbox.yakoa.io/${NETWORK}/token`;
 
+// Check if IP asset already exists in Yakoa
+export async function checkYakoaTokenExists(id: string): Promise<boolean> {
+  try {
+    const response = await axios.get(`${REGISTER_TOKEN_URL}/${id}`, {
+      headers: {
+        "X-API-KEY": YAKOA_API_KEY,
+      },
+    });
+    console.log("✅ IP asset already exists in Yakoa:", response.data);
+    return true;
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      console.log("✅ IP asset does not exist in Yakoa, can proceed with registration");
+      return false;
+    }
+    console.error("❌ Error checking Yakoa token existence:", err.response?.data || err.message);
+    throw err;
+  }
+}
+
 export async function registerToYakoa({
   Id,
   transactionHash,
@@ -43,7 +63,20 @@ export async function registerToYakoa({
   }>;
 }) {
   const timestamp = new Date().toISOString();
+  
   try {
+    // Check if IP asset already exists
+    const alreadyExists = await checkYakoaTokenExists(Id);
+    if (alreadyExists) {
+      console.log("⚠️ IP asset already registered in Yakoa, returning existing data");
+      const existingData = await getYakoaToken(Id);
+      return {
+        ...existingData,
+        alreadyRegistered: true,
+        message: "IP asset already registered in Yakoa"
+      };
+    }
+
     const payload = {
       id: Id, // Keep original case for validation
       registration_tx: {
@@ -61,12 +94,12 @@ export async function registerToYakoa({
     console.log("🧪 Raw Payload Before Sanitization:", payload);
 
     let sanitizedPayload;
-try {
-  sanitizedPayload = sanitizeBigInts(payload);
-} catch (err) {
-  console.error("🔥 Error in sanitizeBigInts:", err);
-  throw err;
-}
+    try {
+      sanitizedPayload = sanitizeBigInts(payload);
+    } catch (err) {
+      console.error("🔥 Error in sanitizeBigInts:", err);
+      throw err;
+    }
     console.log("💡 Yakoa Payload:", JSON.stringify(sanitizedPayload, null, 2));
 
     const response = await axios.post(
@@ -81,8 +114,28 @@ try {
     );
 
     console.log("✅ Yakoa Registration Response:", response.data);
-    return response.data;
+    return {
+      ...response.data,
+      alreadyRegistered: false,
+      message: "IP asset successfully registered in Yakoa"
+    };
   } catch (err: any) {
+    // Handle 409 Conflict specifically
+    if (err.response?.status === 409) {
+      console.log("⚠️ IP asset already registered (409 Conflict), fetching existing data");
+      try {
+        const existingData = await getYakoaToken(Id);
+        return {
+          ...existingData,
+          alreadyRegistered: true,
+          message: "IP asset already registered in Yakoa (handled conflict)"
+        };
+      } catch (fetchErr) {
+        console.error("❌ Error fetching existing data after conflict:", fetchErr);
+        throw err; // Re-throw original error if we can't fetch existing data
+      }
+    }
+    
     console.error("❌ Error registering to Yakoa:", err.response?.data || err.message);
     throw err;
   }

@@ -3,6 +3,7 @@ import { registerIpWithEtherlink } from '../services/storyService';
 import { registerToYakoa } from '../services/yakoascanner';
 import { Address } from 'viem';
 import { convertBigIntsToStrings } from '../utils/bigIntSerializer';
+import { generateTimestampedId } from '../utils/idGenerator';
 
 const handleRegistration = async (req: Request, res: Response) => {
   console.log("🔥 Entered handleRegistration");
@@ -37,7 +38,8 @@ const handleRegistration = async (req: Request, res: Response) => {
       const contractAddress = modredIpContractAddress.toLowerCase();
       
       // Format ID as contract address with token ID: 0x[contract_address]:[token_id]
-      const Id = `${contractAddress}:${ipAssetId}`;
+      // Generate unique timestamped ID for Yakoa registration to prevent conflicts
+      const Id = generateTimestampedId(contractAddress, ipAssetId);
       console.log("📞 Calling registerToYakoa...");
       console.log("🔍 Yakoa ID format:", Id);
       console.log("🔍 Contract address:", contractAddress);
@@ -129,8 +131,13 @@ const handleRegistration = async (req: Request, res: Response) => {
         authorizations: authorizations,
       });
 
+      // Determine success message based on Yakoa response
+      const successMessage = yakoaResponse.alreadyRegistered 
+        ? 'IP Asset registered on Etherlink, already exists in Yakoa'
+        : 'IP Asset successfully registered on Etherlink and Yakoa';
+
       const responseData = {
-        message: 'Registration successful',
+        message: successMessage,
         etherlink: {
           txHash,
           ipAssetId,

@@ -27,6 +27,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "dev": "ts-node src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test:yakoa": "ts-node src/scripts/test-yakoa.ts"
   }
 }

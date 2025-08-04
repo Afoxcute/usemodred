@@ -25,9 +25,8 @@
     "ts-node": "^10.9.2"
   },
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "ts-node src/index.ts",
     "dev": "ts-node src/index.ts",
-    "build": "tsc",
-    "postinstall": "yarn build"
+    "build": "tsc"
   }
 }

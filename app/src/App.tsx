@@ -18,6 +18,7 @@ import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
 
 // Backend API configuration
 const BACKEND_URL = "https://usemodred-production.up.railway.app";
+// http://localhost:5000
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes

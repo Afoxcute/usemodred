@@ -1,4 +1,3 @@
-// yakoaScanner.ts
 import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
@@ -7,6 +6,12 @@ const YAKOA_API_KEY = process.env.YAKOA_API_KEY!;
 const SUBDOMAIN = process.env.YAKOA_SUBDOMAIN!;
 const NETWORK = process.env.YAKOA_NETWORK!;
 const REGISTER_TOKEN_URL = `https://${SUBDOMAIN}.ip-api-sandbox.yakoa.io/${NETWORK}/token`;
+
+// Generate unique timestamped ID
+function generateUniqueId(contractAddress: string, tokenId: number): string {
+  const timestamp = Date.now();
+  return `${contractAddress.toLowerCase()}:${tokenId}:${timestamp}`;
+}
 
 // Check if IP asset already exists in Yakoa
 async function checkYakoaTokenExists(id: string): Promise<boolean> {
@@ -44,18 +49,22 @@ async function getYakoaToken(id: string) {
   }
 }
 
-export async function registerToYakoa() {
-  const tokenId = "0x8f0a1ac6ca4f8cb0417112069c0f4dc93b9f0217:1117";
-  const transactionHash = "0xa6aa90bc9033aebf5d3efa8be88b85377ebf8d55aa053439f0217e1ccdedd3b2"; // 32 char fake hash
+async function testUniqueRegistration() {
+  const contractAddress = "0x8f0a1ac6ca4f8cb0417112069c0f4dc93b9f0217";
+  const tokenId = 1117;
+  const uniqueId = generateUniqueId(contractAddress, tokenId);
+  const transactionHash = "0xa6aa90bc9033aebf5d3efa8be88b85377ebf8d55aa053439f0217e1ccdedd3b2";
   const creatorId = "0xd4a6166d966f4821ce8658807466dd0b0bb92ae9";
-  const timestamp = new Date().toISOString(); // ISO string format
+  const timestamp = new Date().toISOString();
+
+  console.log("🧪 Testing unique registration with ID:", uniqueId);
 
   try {
     // Check if IP asset already exists
-    const alreadyExists = await checkYakoaTokenExists(tokenId);
+    const alreadyExists = await checkYakoaTokenExists(uniqueId);
     if (alreadyExists) {
       console.log("⚠️ IP asset already registered in Yakoa, returning existing data");
-      const existingData = await getYakoaToken(tokenId);
+      const existingData = await getYakoaToken(uniqueId);
       return {
         ...existingData,
         alreadyRegistered: true,
@@ -66,7 +75,7 @@ export async function registerToYakoa() {
     const response = await axios.post(
       REGISTER_TOKEN_URL,
       {
-        id: tokenId,
+        id: uniqueId,
         registration_tx: {
           hash: transactionHash,
           block_number: 5177789,
@@ -74,12 +83,12 @@ export async function registerToYakoa() {
         },
         creator_id: creatorId,
         metadata: {
-          title: "Skeleton's gift",
-          description: "This IP Asset represents ownership of the IP Asset.",
+          title: "Unique Test IP Asset",
+          description: "This is a unique test IP asset with timestamped ID.",
         },
         media: [
           {
-            media_id: "Skeleton's gift",
+            media_id: "Unique Test IP Asset",
             url: "https://ipfs.io/ipfs/bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku"
           }
         ]
@@ -103,7 +112,7 @@ export async function registerToYakoa() {
     if (err.response?.status === 409) {
       console.log("⚠️ IP asset already registered (409 Conflict), fetching existing data");
       try {
-        const existingData = await getYakoaToken(tokenId);
+        const existingData = await getYakoaToken(uniqueId);
         return {
           ...existingData,
           alreadyRegistered: true,
@@ -119,3 +128,17 @@ export async function registerToYakoa() {
     throw err;
   }
 }
+
+// Run the test
+async function main() {
+  try {
+    const result = await testUniqueRegistration();
+    console.log("🎉 Unique registration completed successfully!");
+    console.log("📋 Result:", result);
+  } catch (error) {
+    console.error("💥 Unique registration failed:", error);
+    process.exit(1);
+  }
+}
+
+main(); 

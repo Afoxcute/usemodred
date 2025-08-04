@@ -16,8 +16,14 @@ RUN yarn install --frozen-lockfile
 # Copy the rest of the application code
 COPY . .
 
+# Create dist directory if it doesn't exist
+RUN mkdir -p dist
+
 # Build TypeScript
 RUN yarn build
+
+# Verify the build was successful
+RUN ls -la dist/
 
 # Expose the port the app runs on
 EXPOSE 3000

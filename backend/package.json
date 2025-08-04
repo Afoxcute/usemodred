@@ -29,6 +29,7 @@
     "dev": "ts-node src/index.ts",
     "build": "tsc",
     "prepare": "tsc",
+    "test:startup": "ts-node src/test-startup.ts",
     "test:yakoa": "ts-node src/scripts/test-yakoa.ts",
     "test:yakoa:unique": "ts-node src/yakoa/test-unique.ts",
     "yakoa:register": "ts-node src/yakoa/index.ts"

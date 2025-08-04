@@ -687,25 +687,25 @@ export default function App({ thirdwebClient }: AppProps) {
       };
 
       // Prepare NFT metadata for backend
-      const nftMetadata = {
-        name: ipName,
-        description: ipDescription,
-        image: metadataUri,
-        attributes: [
-          {
-            trait_type: "IP Hash",
-            value: ipHash
-          },
-          {
-            trait_type: "Creator",
-            value: account.address
-          },
-          {
-            trait_type: "Encrypted",
-            value: isEncrypted
-          }
-        ]
-      };
+      // const nftMetadata = {
+      //   name: ipName,
+      //   description: ipDescription,
+      //   image: metadataUri,
+      //   attributes: [
+      //     {
+      //       trait_type: "IP Hash",
+      //       value: ipHash
+      //     },
+      //     {
+      //       trait_type: "Creator",
+      //       value: account.address
+      //     },
+      //     {
+      //       trait_type: "Encrypted",
+      //       value: isEncrypted
+      //     }
+      //   ]
+      // };
 
       // Call backend API
       const response = await fetch(`${BACKEND_URL}/api/register`, {

@@ -3,7 +3,6 @@ import { registerIpWithEtherlink } from '../services/storyService';
 import { registerToYakoa } from '../services/yakoascanner';
 import { Address } from 'viem';
 import { convertBigIntsToStrings } from '../utils/bigIntSerializer';
-import { generateTimestampedId } from '../utils/idGenerator';
 
 const handleRegistration = async (req: Request, res: Response) => {
   console.log("🔥 Entered handleRegistration");
@@ -38,8 +37,8 @@ const handleRegistration = async (req: Request, res: Response) => {
       const contractAddress = modredIpContractAddress.toLowerCase();
       
       // Format ID as contract address with token ID: 0x[contract_address]:[token_id]
-      // Generate unique timestamped ID for Yakoa registration to prevent conflicts
-      const Id = generateTimestampedId(contractAddress, ipAssetId);
+      // Use base ID format for Yakoa API compatibility
+      const Id = `${contractAddress.toLowerCase()}:${ipAssetId}`;
       console.log("📞 Calling registerToYakoa...");
       console.log("🔍 Yakoa ID format:", Id);
       console.log("🔍 Contract address:", contractAddress);
@@ -67,13 +66,21 @@ const handleRegistration = async (req: Request, res: Response) => {
       creatorId = creatorId.toLowerCase();
       console.log("✅ Final creator_id for Yakoa:", creatorId);
 
+      // Extract hash from ipfs:// format for Yakoa API
+      const extractHash = (ipfsHash: string): string => {
+        if (ipfsHash.startsWith('ipfs://')) {
+          return ipfsHash.replace('ipfs://', '');
+        }
+        return ipfsHash;
+      };
+
       // Prepare comprehensive metadata for Yakoa
       const yakoaMetadata = {
         title: parsedMetadata.name || 'Unknown',
         description: parsedMetadata.description || '',
         creator: creatorId,
         created_at: parsedMetadata.created_at || new Date().toISOString(),
-        ip_hash: ipHash,
+        ip_hash: extractHash(ipHash), // Use extracted hash
         is_encrypted: isEncrypted,
         contract_address: contractAddress,
         token_id: ipAssetId.toString(),
@@ -92,10 +99,10 @@ const handleRegistration = async (req: Request, res: Response) => {
       const yakoaMedia = [
         {
           media_id: parsedMetadata.name || 'Unknown',
-          url: `https://ipfs.io/ipfs/${ipHash}`,
+          url: `https://ipfs.io/ipfs/${extractHash(ipHash)}`, // Use extracted hash for URL
           type: parsedMetadata.mime_type || 'unknown',
           size: parsedMetadata.file_size || 0,
-          hash: ipHash,
+          // Removed hash field as it's not required by Yakoa API
           metadata: {
             name: parsedMetadata.name || 'Unknown',
             description: parsedMetadata.description || '',

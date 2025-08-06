@@ -1,5 +1,4 @@
 import { registerToYakoa, checkYakoaTokenExists, getYakoaToken } from '../services/yakoascanner';
-import { generateTimestampedId } from '../utils/idGenerator';
 
 async function testYakoaConflictHandling() {
   console.log("🧪 Testing Yakoa conflict handling...");
@@ -8,7 +7,8 @@ async function testYakoaConflictHandling() {
     // Test with a sample IP asset
     const contractAddress = "0x8f0a1ac6ca4f8cb0417112069c0f4dc93b9f0217";
     const tokenId = 1117;
-    const testId = generateTimestampedId(contractAddress, tokenId);
+    // Use base ID format for Yakoa API compatibility
+    const testId = `${contractAddress.toLowerCase()}:${tokenId}`;
     
     console.log("📋 Test ID:", testId);
     

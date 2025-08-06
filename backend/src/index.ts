@@ -12,7 +12,7 @@ import infringementRoutes from './routes/infringement';
 dotenv.config();
 
 const app = express();
-const PORT = process.env['PORT'] || 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -24,21 +24,20 @@ app.use('/api/yakoa', yakoaRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/infringement', infringementRoutes);
 
-// Health check endpoint for Railway
+// Health check endpoint
 app.get('/', (_req, res) => {
   res.json({
     status: 'healthy',
-    message: '✅ ModredIP Backend API is running!',
+    message: '✅ Yakoa + Etherlink backend is running!',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Health check endpoint
+// Health check for Railway
 app.get('/health', (_req, res) => {
   res.json({
     status: 'healthy',
-    service: 'modredip-backend',
     timestamp: new Date().toISOString()
   });
 });

@@ -19,8 +19,8 @@
         "claim-revenue": "npx ts-node ./scripts/royalty/claimRevenue.ts",
         "create-spg-collection": "npx ts-node ./utils/functions/createSpgNftCollection.ts",
         "send-raw-transaction": "npx ts-node ./scripts/misc/sendRawTransaction.ts",
-        "start": "ts-node yakoa/index.ts",
-        "dev:backend": "ts-node app.ts"
+        "start-old": "ts-node yakoa/index.ts",
+        "start": "ts-node app.ts"
     },
     "author": "",
     "license": "ISC",

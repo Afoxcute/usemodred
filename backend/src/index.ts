@@ -24,22 +24,9 @@ app.use('/api/yakoa', yakoaRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/infringement', infringementRoutes);
 
-// Health check endpoint
+// Default route (optional)
 app.get('/', (_req, res) => {
-  res.json({
-    status: 'healthy',
-    message: '✅ Yakoa + Etherlink backend is running!',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Health check for Railway
-app.get('/health', (_req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
+  res.send('✅ Yakoa + Etherlink backend is running!');
 });
 
 // Start Server

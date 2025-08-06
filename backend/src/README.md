@@ -1,67 +1,153 @@
-# Story TypeScript SDK Examples
+# ModredIP Backend API
 
-## Get Started
+A comprehensive backend API for the ModredIP platform, providing IP management services on the Etherlink blockchain using ERC-6551 token standards.
 
-1. Install the dependencies:
+## 🚀 Railway Deployment
 
-    ```
-    npm install
-    ```
+This backend is configured for Railway deployment with automatic builds and deployments.
 
-2. Rename the `.env.example` file to `.env`
+### Prerequisites
 
-3. Add your Story Network Testnet wallet's private key to `.env` file:
+- Node.js 18+ 
+- npm 8+
+- Railway account
 
-    ```
-    WALLET_PRIVATE_KEY=<your_wallet_private_key>
-    ```
+### Environment Variables
 
-4. [REQUIRED FOR `register` and `register-custom` SCRIPTS] Go to [Pinata](https://pinata.cloud/) and create a new API key. Add the JWT to your `.env` file:
+Set these environment variables in your Railway project:
 
-    ```
-    PINATA_JWT=<your_pinata_jwt>
-    ```
+```bash
+# Blockchain Configuration
+ETHERLINK_RPC_URL=https://node.ghostnet.tezos.marigold.dev
+ETHERLINK_CHAIN_ID=128123
+ETHERLINK_EXPLORER_URL=https://ghostnet.etherlink.com
 
-5. [OPTIONAL] We have already configured a public SPG NFT collection for you (`0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc`). If you want to create your own collection for your IPs, create a new SPG NFT collection by running `npm run create-spg-collection` in your terminal.
+# Contract Addresses
+MODRED_IP_CONTRACT_ADDRESS=your_deployed_contract_address
+ERC6551_REGISTRY_ADDRESS=your_registry_address
+ERC6551_ACCOUNT_ADDRESS=your_account_address
 
-    3a. Look at the console output, and copy the NFT contract address. Add that value as `SPG_NFT_CONTRACT_ADDRESS` to your `.env` file:
+# External APIs
+PINATA_JWT=your_pinata_jwt_token
+YAKOA_API_KEY=your_yakoa_api_key
+YAKOA_API_URL=https://api.yakoa.com/v1
 
-    ```
-    SPG_NFT_CONTRACT_ADDRESS=<your_spg_nft_contract_address>
-    ```
+# Server Configuration
+PORT=5000
+NODE_ENV=production
+CORS_ORIGIN=https://your-frontend-domain.com
 
-    **NOTE: You will only have to do this one time. Once you create an SPG collection, you can run this script as many times as you'd like.**
+# Optional: Database (if needed)
+DATABASE_URL=your_database_url
+```
 
-## Available Scripts
+### Deployment Steps
 
-Below are all of the available scripts to help you build on Story.
+1. **Connect to Railway**
+   ```bash
+   railway login
+   ```
 
-### Registration
+2. **Initialize Railway Project**
+   ```bash
+   railway init
+   ```
 
--   `register`: This mints an NFT and registers it in the same transaction, using a public SPG collection.
--   `register-custom`: This mints an NFT using a custom ERC-721 contract and then registers it in a separate transaction.
+3. **Set Environment Variables**
+   ```bash
+   railway variables set ETHERLINK_RPC_URL=https://node.ghostnet.tezos.marigold.dev
+   railway variables set ETHERLINK_CHAIN_ID=128123
+   # ... set all other required variables
+   ```
 
-### Licenses
+4. **Deploy**
+   ```bash
+   railway up
+   ```
 
--   `mint-license`: Mints a license token from an IP Asset.
--   `limit-license`: Registers a new IP and attaches license terms that only allow you to mint 1 license token. This is an example for limiting the amount of licenses you can mint.
+### API Endpoints
 
-### Royalty
+#### IP Registration
+- `POST /api/register` - Register new IP asset
+- `GET /api/register/:id` - Get IP asset details
 
--   `pay-revenue`: This is an example of registering a derivative, paying the derivative, and then allowing derivative and parent to claim their revenues.
--   `license-revenue`: This is an example of registering a derivative, minting a paid license from the derivative, and then allowing derivative and parent to claim their revenues.
--   `transfer-royalty-tokens`: This shows you how to transfer Royalty Tokens from an IP Account to any external wallet. Royalty Tokens are used to claim a % of revenue from an IP Asset.
+#### License Management
+- `POST /api/license/mint` - Mint license token
+- `GET /api/license/:id` - Get license details
 
-### Derivative
+#### Infringement Monitoring
+- `POST /api/infringement/check` - Check for infringements
+- `GET /api/infringement/:id` - Get infringement details
 
--   `derivative-commercial`: This mints an NFT and registers it as a derivative of an IP Asset in the same transaction, using a public SPG collection. It costs 1 $WIP to register as derivative and also includes an example of the parent claiming its revenue.
--   `derivative-non-commercial`: This mints an NFT and registesr it as a derivative of an IP Asset in the same transaction, using a public SPG collection. It's free to register as derivative.
--   `derivative-commercial-custom`: This mints an NFT using a custom ERC-721 contract and then registers it as a derivative of an IP Asset in a separate transaction. It costs 1 $WIP to register as derivative and also includes an example of the parent claiming its revenue.
+#### Health Check
+- `GET /` - Health check endpoint
 
-### Dispute
+### Build Process
 
--   `dispute`: This disputes an IP Asset.
+The application uses the following build process:
 
-### Misc
+1. **Install Dependencies**: `npm install`
+2. **Build TypeScript**: `npm run build` (runs automatically via postinstall)
+3. **Start Server**: `npm start`
 
--   `send-raw-transaction`: An example of sending a transaction using viem's `encodeFunctionData`.
+### Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+### Scripts
+
+- `npm start` - Start production server
+- `npm run dev` - Start development server
+- `npm run build` - Build TypeScript to JavaScript
+- `npm run test` - Run tests (placeholder)
+
+### Architecture
+
+```
+src/
+├── controllers/     # API route handlers
+├── services/        # Business logic
+├── routes/          # Express route definitions
+├── utils/           # Utility functions
+├── scripts/         # CLI scripts
+├── types/           # TypeScript type definitions
+└── index.ts         # Main entry point
+```
+
+### Monitoring
+
+The application includes health checks and logging for Railway monitoring:
+
+- Health check endpoint: `GET /`
+- Automatic restart on failure
+- 300-second health check timeout
+
+### Troubleshooting
+
+1. **Build Failures**: Check TypeScript compilation errors
+2. **Runtime Errors**: Check environment variables
+3. **API Errors**: Verify contract addresses and RPC URLs
+4. **CORS Issues**: Update CORS_ORIGIN environment variable
+
+### Support
+
+For issues with Railway deployment, check:
+- Railway logs: `railway logs`
+- Environment variables: `railway variables`
+- Service status: `railway status`
+
+## License
+
+MIT License - see LICENSE file for details.

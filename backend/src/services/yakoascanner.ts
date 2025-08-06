@@ -94,12 +94,12 @@ export async function registerToYakoa({
     console.log("🧪 Raw Payload Before Sanitization:", payload);
 
     let sanitizedPayload;
-    try {
-      sanitizedPayload = sanitizeBigInts(payload);
-    } catch (err) {
-      console.error("🔥 Error in sanitizeBigInts:", err);
-      throw err;
-    }
+try {
+  sanitizedPayload = sanitizeBigInts(payload);
+} catch (err) {
+  console.error("🔥 Error in sanitizeBigInts:", err);
+  throw err;
+}
     console.log("💡 Yakoa Payload:", JSON.stringify(sanitizedPayload, null, 2));
 
     const response = await axios.post(

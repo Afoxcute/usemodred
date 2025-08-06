@@ -182,9 +182,9 @@ export const mintLicenseOnEtherlink = async (
 
         return {
             txHash: hash,
-            blockNumber: receipt.blockNumber,
+    blockNumber: receipt.blockNumber,
             explorerUrl: `${BLOCK_EXPLORER_URL}/tx/${hash}`,
-        };
+  };
     } catch (error) {
         console.error('Error minting license on Etherlink:', error);
         throw error;

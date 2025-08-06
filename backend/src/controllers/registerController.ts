@@ -117,10 +117,10 @@ const handleRegistration = async (req: Request, res: Response) => {
         }
       ];
 
-      const yakoaResponse = await registerToYakoa({
-        Id: Id,
-        transactionHash: txHash as `0x${string}`,
-        blockNumber,
+const yakoaResponse = await registerToYakoa({
+  Id: Id,
+  transactionHash: txHash as `0x${string}`,
+  blockNumber,
         creatorId: creatorId,
         metadata: yakoaMetadata,
         media: yakoaMedia,
@@ -129,7 +129,7 @@ const handleRegistration = async (req: Request, res: Response) => {
         emailAddress: parsedMetadata.creator_email || 'creator@modredip.com',
         licenseParents: [],
         authorizations: authorizations,
-      });
+});
 
       // Determine success message based on Yakoa response
       const successMessage = yakoaResponse.alreadyRegistered 
@@ -139,13 +139,13 @@ const handleRegistration = async (req: Request, res: Response) => {
       const responseData = {
         message: successMessage,
         etherlink: {
-          txHash,
+        txHash,
           ipAssetId,
-          explorerUrl,
+        explorerUrl,
           blockNumber,
           ipHash
-        },
-        yakoa: yakoaResponse,
+      },
+      yakoa: yakoaResponse,
       };
 
       return res.status(200).json(convertBigIntsToStrings(responseData));

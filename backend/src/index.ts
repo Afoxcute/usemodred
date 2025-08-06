@@ -12,29 +12,11 @@ import infringementRoutes from './routes/infringement';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
-// CORS configuration for Railway deployment
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+const PORT = process.env['PORT'] || 5000;
 
 // Middleware
-app.use(cors(corsOptions));
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-
-// Health check endpoint for Railway
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT
-  });
-});
+app.use(cors());
+app.use(bodyParser.json());
 
 // API Routes
 app.use('/api/register', registerRoutes);
@@ -42,58 +24,26 @@ app.use('/api/yakoa', yakoaRoutes);
 app.use('/api/license', licenseRoutes);
 app.use('/api/infringement', infringementRoutes);
 
-// Default route
+// Health check endpoint for Railway
 app.get('/', (_req, res) => {
   res.json({
+    status: 'healthy',
     message: '✅ ModredIP Backend API is running!',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      register: '/api/register',
-      license: '/api/license',
-      yakoa: '/api/yakoa',
-      infringement: '/api/infringement'
-    }
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
   });
 });
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'modredip-backend',
+    timestamp: new Date().toISOString()
   });
 });
 
 // Start Server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 ModredIP Backend server running on port ${PORT}`);
-  console.log(`📊 Health check available at http://localhost:${PORT}/health`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Backend server running at http://localhost:${PORT}`);
 });
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
-  });
-});
-
-export default app;

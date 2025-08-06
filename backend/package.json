@@ -1,17 +1,4 @@
 {
-  "name": "modredip-backend",
-  "version": "1.0.0",
-  "description": "ModredIP Backend API for IP management on Etherlink",
-  "main": "dist/index.js",
-  "scripts": {
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "build": "tsc",
-    "postinstall": "npm run build",
-    "test:yakoa": "ts-node src/scripts/test-yakoa.ts",
-    "test:yakoa:unique": "ts-node src/yakoa/test-unique.ts",
-    "yakoa:register": "ts-node src/yakoa/index.ts"
-  },
   "dependencies": {
     "@tanstack/react-query": "^5.80.6",
     "@tomo-inc/tomo-evm-kit": "^0.0.45",
@@ -23,31 +10,26 @@
     "wagmi": "^2.15.6",
     "@openzeppelin/contracts": "^5.4.0",
     "cors": "^2.8.5",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.8",
     "@types/form-data": "^2.2.1",
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
     "@types/node": "^20.10.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "ts-node": "^10.9.2"
   },
-  "devDependencies": {
-    "@tailwindcss/cli": "^4.1.8",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.4",
-    "tailwindcss": "^4.1.8"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "keywords": [
-    "modredip",
-    "ip-management",
-    "blockchain",
-    "etherlink",
-    "erc-6551"
-  ],
-  "author": "ModredIP Team",
-  "license": "MIT"
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "test:yakoa": "ts-node src/scripts/test-yakoa.ts",
+    "test:yakoa:unique": "ts-node src/yakoa/test-unique.ts",
+    "yakoa:register": "ts-node src/yakoa/index.ts"
+  }
 }

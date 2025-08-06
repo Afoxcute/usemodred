@@ -1,67 +1,229 @@
-# Story TypeScript SDK Examples
+# ModredIP Backend API
 
-## Get Started
+A comprehensive backend API for the ModredIP platform, providing IP management services on the Etherlink blockchain with ERC-6551 token standard support.
 
-1. Install the dependencies:
+## 🚀 Railway Deployment
 
-    ```
-    npm install
-    ```
+This backend is configured for Railway deployment with automatic builds and deployments.
 
-2. Rename the `.env.example` file to `.env`
+### Quick Deploy
 
-3. Add your Story Network Testnet wallet's private key to `.env` file:
+1. **Connect to Railway**
+   ```bash
+   # Install Railway CLI
+   npm install -g @railway/cli
+   
+   # Login to Railway
+   railway login
+   
+   # Link to your Railway project
+   railway link
+   ```
 
-    ```
-    WALLET_PRIVATE_KEY=<your_wallet_private_key>
-    ```
+2. **Deploy to Railway**
+   ```bash
+   railway up
+   ```
 
-4. [REQUIRED FOR `register` and `register-custom` SCRIPTS] Go to [Pinata](https://pinata.cloud/) and create a new API key. Add the JWT to your `.env` file:
+3. **Set Environment Variables**
+   - Go to your Railway project dashboard
+   - Navigate to "Variables" tab
+   - Add all required environment variables (see `ENVIRONMENT.md`)
 
-    ```
-    PINATA_JWT=<your_pinata_jwt>
-    ```
+### Manual Deployment
 
-5. [OPTIONAL] We have already configured a public SPG NFT collection for you (`0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc`). If you want to create your own collection for your IPs, create a new SPG NFT collection by running `npm run create-spg-collection` in your terminal.
+1. **Fork/Clone this repository**
+2. **Connect to Railway project**
+3. **Set environment variables**
+4. **Deploy**
 
-    3a. Look at the console output, and copy the NFT contract address. Add that value as `SPG_NFT_CONTRACT_ADDRESS` to your `.env` file:
+## 🏗️ Architecture
 
-    ```
-    SPG_NFT_CONTRACT_ADDRESS=<your_spg_nft_contract_address>
-    ```
+### Core Components
 
-    **NOTE: You will only have to do this one time. Once you create an SPG collection, you can run this script as many times as you'd like.**
+- **Express.js Server**: RESTful API endpoints
+- **Etherlink Integration**: Blockchain interactions via Viem
+- **Yakoa Integration**: IP infringement monitoring
+- **IPFS Integration**: Decentralized storage via Pinata
+- **TypeScript**: Type-safe development
 
-## Available Scripts
+### API Endpoints
 
-Below are all of the available scripts to help you build on Story.
+- `POST /api/register` - Register IP assets
+- `POST /api/license/mint` - Mint license tokens
+- `GET /api/health` - Health check
+- `GET /` - Root endpoint
 
-### Registration
+## 🔧 Development
 
--   `register`: This mints an NFT and registers it in the same transaction, using a public SPG collection.
--   `register-custom`: This mints an NFT using a custom ERC-721 contract and then registers it in a separate transaction.
+### Local Development
 
-### Licenses
+```bash
+# Install dependencies
+npm install
 
--   `mint-license`: Mints a license token from an IP Asset.
--   `limit-license`: Registers a new IP and attaches license terms that only allow you to mint 1 license token. This is an example for limiting the amount of licenses you can mint.
+# Start development server
+npm run dev
 
-### Royalty
+# Build for production
+npm run build
 
--   `pay-revenue`: This is an example of registering a derivative, paying the derivative, and then allowing derivative and parent to claim their revenues.
--   `license-revenue`: This is an example of registering a derivative, minting a paid license from the derivative, and then allowing derivative and parent to claim their revenues.
--   `transfer-royalty-tokens`: This shows you how to transfer Royalty Tokens from an IP Account to any external wallet. Royalty Tokens are used to claim a % of revenue from an IP Asset.
+# Start production server
+npm start
+```
 
-### Derivative
+### Scripts
 
--   `derivative-commercial`: This mints an NFT and registers it as a derivative of an IP Asset in the same transaction, using a public SPG collection. It costs 1 $WIP to register as derivative and also includes an example of the parent claiming its revenue.
--   `derivative-non-commercial`: This mints an NFT and registesr it as a derivative of an IP Asset in the same transaction, using a public SPG collection. It's free to register as derivative.
--   `derivative-commercial-custom`: This mints an NFT using a custom ERC-721 contract and then registers it as a derivative of an IP Asset in a separate transaction. It costs 1 $WIP to register as derivative and also includes an example of the parent claiming its revenue.
+- `npm run dev` - Start development server
+- `npm run build` - Build TypeScript to JavaScript
+- `npm start` - Start production server
+- `npm run yakoa` - Test Yakoa integration
 
-### Dispute
+## 📦 Dependencies
 
--   `dispute`: This disputes an IP Asset.
+### Production Dependencies
+- `express` - Web framework
+- `cors` - Cross-origin resource sharing
+- `dotenv` - Environment variable management
+- `viem` - Ethereum client for Etherlink
+- `axios` - HTTP client
+- `@openzeppelin/contracts` - Smart contract utilities
 
-### Misc
+### Development Dependencies
+- `typescript` - TypeScript compiler
+- `ts-node` - TypeScript execution
+- `@types/express` - Express type definitions
+- `@types/cors` - CORS type definitions
+- `@types/node` - Node.js type definitions
 
--   `send-raw-transaction`: An example of sending a transaction using viem's `encodeFunctionData`.
+## 🔐 Environment Variables
+
+See `ENVIRONMENT.md` for complete list of required environment variables.
+
+### Required Variables
+- `PORT` - Server port (default: 5000)
+- `PRIVATE_KEY` - Etherlink private key
+- `YAKOA_API_KEY` - Yakoa API key
+- `PINATA_JWT` - Pinata IPFS JWT token
+
+## 🚀 Railway Configuration
+
+### Build Process
+1. Railway detects Node.js project
+2. Runs `npm install`
+3. Executes `npm run postinstall` (builds TypeScript)
+4. Starts with `npm start`
+
+### Health Checks
+- Endpoint: `/`
+- Timeout: 300 seconds
+- Restart policy: On failure
+
+### Scaling
+- Automatic scaling based on traffic
+- Horizontal scaling support
+- Load balancing enabled
+
+## 📊 Monitoring
+
+### Railway Dashboard
+- Real-time logs
+- Performance metrics
+- Error tracking
+- Deployment history
+
+### Health Monitoring
+- Automatic health checks
+- Uptime monitoring
+- Performance alerts
+
+## 🔄 CI/CD
+
+### Automatic Deployments
+- Deploy on push to main branch
+- Automatic rollback on failure
+- Environment-specific deployments
+
+### Manual Deployments
+```bash
+# Deploy to production
+railway up --service production
+
+# Deploy to staging
+railway up --service staging
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Build Failures**
+   - Check TypeScript compilation errors
+   - Verify all dependencies are installed
+   - Ensure proper Node.js version
+
+2. **Runtime Errors**
+   - Check environment variables
+   - Verify blockchain connectivity
+   - Review API key configurations
+
+3. **Performance Issues**
+   - Monitor Railway metrics
+   - Check database connections
+   - Review external API calls
+
+### Logs
+```bash
+# View Railway logs
+railway logs
+
+# View specific service logs
+railway logs --service backend
+```
+
+## 📈 Performance
+
+### Optimization
+- TypeScript compilation for production
+- Efficient dependency management
+- Optimized build process
+- Caching strategies
+
+### Monitoring
+- Response time tracking
+- Error rate monitoring
+- Resource utilization
+- External API performance
+
+## 🔒 Security
+
+### Best Practices
+- Environment variable management
+- API key rotation
+- CORS configuration
+- Input validation
+- Rate limiting
+
+### Railway Security
+- Automatic HTTPS
+- Secret management
+- Network isolation
+- Access controls
+
+## 📞 Support
+
+For deployment issues:
+1. Check Railway documentation
+2. Review environment variables
+3. Check build logs
+4. Contact Railway support
+
+For application issues:
+1. Review application logs
+2. Check API responses
+3. Verify blockchain connectivity
+4. Test external integrations
+
+---
+
+**Ready for Railway deployment! 🚀**

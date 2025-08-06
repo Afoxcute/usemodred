@@ -22,7 +22,7 @@ import { etherlinkTestnet } from "viem/chains";
 import CONTRACT_ADDRESS_JSON from "./deployed_addresses.json";
 
 // Backend API configuration
-const BACKEND_URL = "https://usemodred-production.up.railway.app/";
+const BACKEND_URL = "https://usemodred-production.up.railway.app";
 
 // File validation and preview utilities
 const MAX_FILE_SIZE_MB = 50; // Maximum file size in megabytes
@@ -504,9 +504,20 @@ export default function App({ thirdwebClient }: AppProps) {
   // Check backend status
   const checkBackendStatus = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/`);
+      const response = await fetch(`${BACKEND_URL}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       const wasConnected = backendStatus;
       const isConnected = response.ok;
+      
+      if (isConnected) {
+        const data = await response.json();
+        console.log('Backend health check:', data);
+      }
       
       setBackendStatus(isConnected);
       
@@ -516,6 +527,7 @@ export default function App({ thirdwebClient }: AppProps) {
         notifyError('Backend Disconnected', 'Lost connection to the ModredIP backend service');
       }
     } catch (error) {
+      console.error('Backend connection error:', error);
       const wasConnected = backendStatus;
       setBackendStatus(false);
       

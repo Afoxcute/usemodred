@@ -10,8 +10,22 @@ import licenseRoutes from './routes/license';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS configuration for production
+const corsOptions = {
+  origin: [
+    'https://usemodred.vercel.app',
+    'https://usemodred-production.up.railway.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:4173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // API Routes
@@ -19,9 +33,22 @@ app.use('/api/register', registerRoutes);
 app.use('/api/yakoa', yakoaRoutes);
 app.use('/api/license', licenseRoutes);
 
-// Default route (optional)
+// Health check endpoint
 app.get('/', (_req, res) => {
-  res.send('✅ Yakoa + Etherlink backend is running!');
+  res.json({
+    status: 'ok',
+    message: '✅ Yakoa + Etherlink backend is running!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Health check for load balancers
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Start the server

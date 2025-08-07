@@ -153,35 +153,31 @@ ModredIP addresses critical pain points in the current IP management landscape:
 
 ### Leadership Team
 
-#### **CEO & Founder**
+#### **Michael Afolabi - CEO & Co-Founder**
 - **Background**: 10+ years in blockchain technology
 - **Expertise**: Smart contract development, DeFi protocols
 - **Vision**: Democratizing IP management through blockchain
-- **Previous**: Led successful DeFi projects, IP law experience
+- **Previous**: Led successful DeFi & Fintech projects
 
-#### **CTO & Technical Lead**
+#### **Casweeny Ojukwu - CTO & Technical Lead**
 - **Background**: 8+ years in full-stack development
 - **Expertise**: React, TypeScript, Solidity, Web3
 - **Architecture**: Designed scalable blockchain applications
 - **Previous**: Senior developer at major tech companies
 
-#### **Head of Product**
+#### **Pappu Kumar - Head of Product**
 - **Background**: 6+ years in product management
 - **Expertise**: User experience, market research, growth
 - **Focus**: Creator-centric product development
 - **Previous**: Product manager at content platforms
 
-#### **Head of Business Development**
-- **Background**: 7+ years in business development
-- **Expertise**: Partnership development, market expansion
-- **Network**: Strong connections in creator economy
-- **Previous**: Business development at entertainment companies
 
-### Advisory Board
+### Advisory Board Lead
+#### **Ayanfe Olajide - Advisory Board Lead**
 - **IP Law Expert**: 20+ years in intellectual property law
 - **Blockchain Advisor**: Early Ethereum contributor
 - **Creator Economy Expert**: Former executive at major platforms
-- **AI/ML Specialist**: PhD in machine learning, infringement detection
+- **AI/ML Specialist**: Machine learning professional, infringement detection
 
 ---
 
@@ -332,17 +328,6 @@ npm install
 npm run dev
 ```
 
-### Documentation
-- [Technical Documentation](./docs/technical.md)
-- [API Reference](./docs/api.md)
-- [Smart Contract Documentation](./docs/contracts.md)
-- [User Guide](./docs/user-guide.md)
-
-### Support
-- **Email**: support@modredip.com
-- **Discord**: [Join our community](https://discord.gg/modredip)
-- **Twitter**: [@ModredIP](https://twitter.com/ModredIP)
-- **Website**: [modredip.com](https://modredip.com)
 
 ---
 

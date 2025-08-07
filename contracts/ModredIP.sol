@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /**
- * @title ERC6551Registry
+ * @title ERC6551Registry now
  * @dev Registry for ERC-6551 token-bound accounts
  */
 contract ModredIP {

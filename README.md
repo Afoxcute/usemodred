@@ -212,35 +212,33 @@ The founders experienced firsthand the challenges of IP management:
 
 ## 🗺️ Roadmap
 
-### Phase 1: Foundation (Q1 2024) ✅ COMPLETED
+### Phase 1: Foundation (Q3 2025) ✅ COMPLETED
 - [x] Smart contract development and deployment
 - [x] Frontend application with modern UI
 - [x] Backend API with blockchain integration
 - [x] IPFS integration for media storage
 - [x] Basic IP registration and management
-
-### Phase 2: Core Features (Q2 2024) ✅ COMPLETED
 - [x] License management system
 - [x] Revenue distribution mechanisms
 - [x] Yakoa infringement monitoring integration
 - [x] Dispute resolution framework
 - [x] User authentication and wallet integration
 
-### Phase 3: Advanced Features (Q3 2024) 🚧 IN PROGRESS
+### Phase 3: Advanced Features (Q4 2025) 🚧 IN PROGRESS
 - [ ] Advanced licensing templates
 - [ ] Automated royalty calculations
 - [ ] Enhanced infringement detection
 - [ ] Mobile application development
 - [ ] API for third-party integrations
 
-### Phase 4: Ecosystem Expansion (Q4 2024) 📋 PLANNED
+### Phase 4: Ecosystem Expansion (Q1 2026) 📋 PLANNED
 - [ ] Marketplace for IP trading
 - [ ] Advanced analytics dashboard
 - [ ] Multi-chain support
 - [ ] Enterprise features
 - [ ] International expansion
 
-### Phase 5: Scale & Optimize (Q1 2025) 🔮 FUTURE
+### Phase 5: Scale & Optimize (Q2 2026) 🔮 FUTURE
 - [ ] AI-powered IP valuation
 - [ ] Advanced dispute resolution
 - [ ] Global partnerships
